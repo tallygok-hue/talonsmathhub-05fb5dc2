@@ -1,0 +1,104 @@
+import { useState } from 'react';
+
+interface LoginResult {
+  success: boolean;
+  isAdmin: boolean;
+  message: string;
+}
+
+interface SecretLoginProps {
+  onLogin: (username: string, code: string) => Promise<LoginResult> | LoginResult;
+  onBack: () => void;
+  onSuccess: (isAdmin: boolean) => void;
+}
+
+export function SecretLogin({ onLogin, onBack, onSuccess }: SecretLoginProps) {
+  const [username, setUsername] = useState('');
+  const [code, setCode] = useState('');
+  const [message, setMessage] = useState('');
+  const [messageType, setMessageType] = useState<'error' | 'success'>('error');
+  const [loading, setLoading] = useState(false);
+  const [attempts, setAttempts] = useState(0);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!username.trim() || !code.trim()) {
+      setMessage('Please enter both username and access code.');
+      setMessageType('error');
+      return;
+    }
+    setLoading(true);
+    try {
+      const result = await Promise.resolve(onLogin(username.trim(), code.trim()));
+      setMessage(result.message);
+      setMessageType(result.success ? 'success' : 'error');
+      if (result.success) {
+        setTimeout(() => { onSuccess(result.isAdmin); }, 800);
+      } else {
+        setAttempts(prev => prev + 1);
+      }
+    } catch {
+      setMessage('An error occurred. Please try again.');
+      setMessageType('error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-950 flex items-center justify-center p-4">
+      <div className="w-full max-w-md">
+        <button onClick={onBack}
+          className="text-gray-600 hover:text-gray-400 text-sm mb-8 flex items-center gap-2 transition-colors">
+          ← Back to Math Hub
+        </button>
+        <div className="bg-gray-900 rounded-2xl p-8 border border-gray-800 shadow-2xl">
+          <div className="text-center mb-6">
+            <div className="w-16 h-16 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              </svg>
+            </div>
+            <h2 className="text-xl font-bold text-white">Restricted Access</h2>
+            <p className="text-gray-500 text-sm mt-1">Enter your credentials to continue</p>
+          </div>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-400 mb-1">Username</label>
+              <input type="text" value={username} onChange={(e) => setUsername(e.target.value)}
+                className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+                placeholder="Enter your name" autoComplete="off" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-400 mb-1">Access Code</label>
+              <input type="password" value={code} onChange={(e) => setCode(e.target.value)}
+                className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+                placeholder="Enter access code" autoComplete="off" />
+            </div>
+            {message && (
+              <div className={`p-3 rounded-lg text-sm font-medium ${
+                messageType === 'error' ? 'bg-red-900/50 text-red-400 border border-red-800' : 'bg-green-900/50 text-green-400 border border-green-800'
+              }`}>{message}</div>
+            )}
+            <button type="submit" disabled={loading}
+              className="w-full py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+              {loading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                  </svg>
+                  Verifying...
+                </span>
+              ) : 'Login'}
+            </button>
+          </form>
+          {attempts >= 3 && (
+            <p className="text-gray-600 text-xs text-center mt-4">Multiple failed attempts detected. All attempts are logged.</p>
+          )}
+        </div>
+        <p className="text-gray-700 text-xs text-center mt-6">All login attempts are recorded and monitored.</p>
+      </div>
+    </div>
+  );
+}
