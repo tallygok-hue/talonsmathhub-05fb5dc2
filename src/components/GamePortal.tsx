@@ -1,4 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { apiToggleFav, apiGetFavs, getCodeId } from '../lib/api';
+import { supabase } from '../integrations/supabase/client';
 
 interface GamePortalProps {
   username: string;
@@ -95,6 +97,9 @@ const games: Game[] = [
   // HORROR
   { id: 'fnaf', name: 'FNAF', icon: '🐻', category: 'Horror', url: 'https://fnaf-game.com/', description: "Five Nights at Freddy's!", color: 'from-gray-800 to-gray-950' },
   { id: 'baldi', name: "Baldi's Basics", icon: '📏', category: 'Horror', url: 'https://baldisbasicsgame.com/', description: "Don't let Baldi catch you!", color: 'from-yellow-600 to-yellow-800' },
+  { id: 'granny', name: 'Granny', icon: '👵', category: 'Horror', url: 'https://grannygame.io/', description: 'Escape the creepy house!', color: 'from-gray-700 to-gray-900' },
+  { id: 'granny2', name: 'Granny Chapter Two', icon: '👵', category: 'Horror', url: 'https://grannygame.io/granny-chapter-two/', description: 'Escape again with Grandpa!', color: 'from-gray-800 to-red-900' },
+  { id: 'granny3', name: 'Granny 3', icon: '👵', category: 'Horror', url: 'https://grannygame.io/granny-3/', description: 'The scariest escape yet!', color: 'from-red-900 to-gray-950' },
   // IDLE
   { id: 'cookieclicker', name: 'Cookie Clicker', icon: '🍪', category: 'Idle', url: 'https://orteil.dashnet.org/cookieclicker/', description: 'Click cookies, build an empire!', color: 'from-amber-400 to-yellow-500' },
   { id: 'clickerheroes', name: 'Clicker Heroes', icon: '⚔️', category: 'Idle', url: 'https://www.clickerheroes.com/', description: 'Click to defeat monsters!', color: 'from-red-500 to-purple-600' },
@@ -135,7 +140,7 @@ const games: Game[] = [
   { id: 'galaga', name: 'Galaga', icon: '🚀', category: 'Retro', url: 'https://www.classicgamesarcade.com/game/21619/galaga-game.html', description: 'Classic space shooter!', color: 'from-blue-900 to-black' },
 ];
 
-const allCategories = ['All', 'CoolMath', 'Action', 'Shooter', 'IO', 'Sports', 'Racing', 'Arcade', 'Puzzle', 'Platformer', 'Sandbox', 'Strategy', 'Fighting', 'Idle', 'Simulation', 'Social', 'Horror', 'Math Games', 'Retro'];
+const allCategories = ['All', 'CoolMath', 'Action', 'Shooter', 'IO', 'Sports', 'Racing', 'Arcade', 'Puzzle', 'Platformer', 'Sandbox', 'Strategy', 'Fighting', 'Horror', 'Idle', 'Simulation', 'Social', 'Math Games', 'Retro'];
 
 export function GamePortal({ username, isAdmin, onLogout, onAdminPanel }: GamePortalProps) {
   const [activeGame, setActiveGame] = useState<Game | null>(null);
@@ -144,20 +149,45 @@ export function GamePortal({ username, isAdmin, onLogout, onAdminPanel }: GamePo
   const [showFavsOnly, setShowFavsOnly] = useState(false);
   const [iframeError, setIframeError] = useState(false);
   const [newTabMode, setNewTabMode] = useState(false);
-  const [favorites, setFavorites] = useState<string[]>(() => {
-    try { return JSON.parse(localStorage.getItem('tmh_favs') || '[]'); }
-    catch { return []; }
-  });
+  const [favorites, setFavorites] = useState<string[]>([]);
+
+  // Load favorites from cloud
+  useEffect(() => {
+    apiGetFavs().then(result => {
+      if (result.favorites) setFavorites(result.favorites);
+    });
+  }, []);
+
+  // Listen for realtime favorite changes (cross-device sync)
+  useEffect(() => {
+    const codeId = getCodeId();
+    if (!codeId) return;
+
+    const channel = supabase
+      .channel('favorites-sync')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'code_favorites',
+      }, () => {
+        // Refresh favorites
+        apiGetFavs().then(result => {
+          if (result.favorites) setFavorites(result.favorites);
+        });
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, []);
 
   useEffect(() => { setIframeError(false); setNewTabMode(false); }, [activeGame]);
 
-  const toggleFav = (id: string) => {
-    setFavorites(prev => {
-      const next = prev.includes(id) ? prev.filter(f => f !== id) : [...prev, id];
-      localStorage.setItem('tmh_favs', JSON.stringify(next));
-      return next;
-    });
-  };
+  const toggleFav = useCallback(async (id: string) => {
+    // Optimistic update
+    setFavorites(prev => prev.includes(id) ? prev.filter(f => f !== id) : [...prev, id]);
+    // Sync to cloud
+    await apiToggleFav(id);
+  }, []);
 
   const openGame = (game: Game) => { setActiveGame(game); setIframeError(false); setNewTabMode(false); };
 
@@ -236,7 +266,7 @@ export function GamePortal({ username, isAdmin, onLogout, onAdminPanel }: GamePo
             <div className="w-10 h-10 bg-gradient-to-br from-purple-600 to-pink-600 rounded-xl flex items-center justify-center text-white font-bold text-lg shrink-0">🎮</div>
             <div className="min-w-0">
               <h1 className="text-base font-bold">🎮 Game Portal</h1>
-              <p className="text-xs text-gray-500 truncate">{username} · {games.length} games · Welcome!</p>
+              <p className="text-xs text-gray-500 truncate">{username} · {games.length} games · ☁️ Cloud synced</p>
             </div>
           </div>
           <div className="flex items-center gap-2 shrink-0">
