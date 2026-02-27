@@ -442,7 +442,7 @@ export function AdminPanel({ loginLog, onBack, onLogout, onClearLogs }: AdminPan
                       <tr key={idx} className="hover:bg-gray-800/40">
                         <td className="px-4 py-2.5 text-gray-400 font-mono text-xs">{log.timestamp}</td>
                         <td className="px-4 py-2.5 font-semibold">{log.username}</td>
-                        <td className="px-4 py-2.5 font-mono text-xs text-gray-400">{log.code === '***ADMIN***' ? <span className="text-yellow-400 font-bold">🔑 ADMIN</span> : log.code.slice(0, 3) + '•••'}</td>
+                        <td className="px-4 py-2.5 font-mono text-xs text-gray-400">{log.code === '***ADMIN***' ? <span className="text-yellow-400 font-bold">🔑 ADMIN</span> : String(log.code || '').slice(0, 3) + '•••'}</td>
                         <td className="px-4 py-2.5"><span className={`px-2 py-0.5 rounded text-xs font-bold ${log.status === 'SUCCESS' ? 'bg-green-900/60 text-green-400' : 'bg-red-900/60 text-red-400'}`}>{log.status === 'SUCCESS' ? '✓ OK' : '✗ FAIL'}</span></td>
                         <td className="px-4 py-2.5 text-gray-600 font-mono text-xs">{log.ip}</td>
                       </tr>
