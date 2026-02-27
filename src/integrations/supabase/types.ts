@@ -14,7 +14,159 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      access_codes: {
+        Row: {
+          active: boolean
+          code: string
+          created_at: string
+          id: string
+          is_admin: boolean
+        }
+        Insert: {
+          active?: boolean
+          code: string
+          created_at?: string
+          id?: string
+          is_admin?: boolean
+        }
+        Update: {
+          active?: boolean
+          code?: string
+          created_at?: string
+          id?: string
+          is_admin?: boolean
+        }
+        Relationships: []
+      }
+      active_sessions: {
+        Row: {
+          code_id: string
+          created_at: string
+          id: string
+          is_admin: boolean
+          last_active: string
+          session_token: string
+          username: string
+        }
+        Insert: {
+          code_id: string
+          created_at?: string
+          id?: string
+          is_admin?: boolean
+          last_active?: string
+          session_token: string
+          username: string
+        }
+        Update: {
+          code_id?: string
+          created_at?: string
+          id?: string
+          is_admin?: boolean
+          last_active?: string
+          session_token?: string
+          username?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "active_sessions_code_id_fkey"
+            columns: ["code_id"]
+            isOneToOne: false
+            referencedRelation: "access_codes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      code_favorites: {
+        Row: {
+          code_id: string
+          created_at: string
+          game_id: string
+          id: string
+        }
+        Insert: {
+          code_id: string
+          created_at?: string
+          game_id: string
+          id?: string
+        }
+        Update: {
+          code_id?: string
+          created_at?: string
+          game_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "code_favorites_code_id_fkey"
+            columns: ["code_id"]
+            isOneToOne: false
+            referencedRelation: "access_codes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      code_progress: {
+        Row: {
+          code_id: string
+          data: Json
+          id: string
+          progress_type: string
+          updated_at: string
+        }
+        Insert: {
+          code_id: string
+          data?: Json
+          id?: string
+          progress_type: string
+          updated_at?: string
+        }
+        Update: {
+          code_id?: string
+          data?: Json
+          id?: string
+          progress_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "code_progress_code_id_fkey"
+            columns: ["code_id"]
+            isOneToOne: false
+            referencedRelation: "access_codes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      login_logs: {
+        Row: {
+          code_text: string | null
+          created_at: string
+          id: string
+          ip: string | null
+          success: boolean
+          user_agent: string | null
+          username: string
+        }
+        Insert: {
+          code_text?: string | null
+          created_at?: string
+          id?: string
+          ip?: string | null
+          success?: boolean
+          user_agent?: string | null
+          username: string
+        }
+        Update: {
+          code_text?: string | null
+          created_at?: string
+          id?: string
+          ip?: string | null
+          success?: boolean
+          user_agent?: string | null
+          username?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
