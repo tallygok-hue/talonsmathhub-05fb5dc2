@@ -151,6 +151,7 @@ export function GamePortal({ username, isAdmin, onLogout, onAdminPanel }: GamePo
   const [iframeError, setIframeError] = useState(false);
   const [newTabMode, setNewTabMode] = useState(false);
   const [favorites, setFavorites] = useState<string[]>([]);
+  const [showABW, setShowABW] = useState(false);
 
   // Load favorites from cloud
   useEffect(() => {
