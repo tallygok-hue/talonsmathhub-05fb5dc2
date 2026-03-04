@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { apiToggleFav, apiGetFavs, getCodeId } from '../lib/api';
 import { supabase } from '../integrations/supabase/client';
+import { AnythingButWork } from './AnythingButWork';
 
 interface GamePortalProps {
   username: string;
@@ -150,6 +151,7 @@ export function GamePortal({ username, isAdmin, onLogout, onAdminPanel }: GamePo
   const [iframeError, setIframeError] = useState(false);
   const [newTabMode, setNewTabMode] = useState(false);
   const [favorites, setFavorites] = useState<string[]>([]);
+  const [showABW, setShowABW] = useState(false);
 
   // Load favorites from cloud
   useEffect(() => {
@@ -201,6 +203,9 @@ export function GamePortal({ username, isAdmin, onLogout, onAdminPanel }: GamePo
   const favGames = games.filter(g => favorites.includes(g.id));
   const popular = ['slope', 'retrobowl', 'cookieclicker', '1v1lol', 'geometrydash', 'smashkarts', 'krunker', 'agario', 'flappy', 'chromedino', 'minecraftclassic', 'garticphone'];
   const popularGames = popular.map(id => games.find(g => g.id === id)).filter(Boolean) as Game[];
+  if (showABW) {
+    return <AnythingButWork onBack={() => setShowABW(false)} />;
+  }
 
   if (activeGame) {
     return (
@@ -270,6 +275,7 @@ export function GamePortal({ username, isAdmin, onLogout, onAdminPanel }: GamePo
             </div>
           </div>
           <div className="flex items-center gap-2 shrink-0">
+            <button onClick={() => setShowABW(true)} className="px-3 py-2 bg-purple-600/20 text-purple-400 rounded-lg text-sm font-medium hover:bg-purple-600/30 transition-colors border border-purple-600/30">🚫📚 ABW</button>
             {isAdmin && (
               <button onClick={onAdminPanel} className="px-3 py-2 bg-yellow-600/20 text-yellow-400 rounded-lg text-sm font-medium hover:bg-yellow-600/30 transition-colors border border-yellow-600/30">⚙️ Admin</button>
             )}
