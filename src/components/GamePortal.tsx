@@ -275,6 +275,7 @@ export function GamePortal({ username, isAdmin, onLogout, onAdminPanel }: GamePo
             </div>
           </div>
           <div className="flex items-center gap-2 shrink-0">
+            <button onClick={() => setShowABW(true)} className="px-3 py-2 bg-purple-600/20 text-purple-400 rounded-lg text-sm font-medium hover:bg-purple-600/30 transition-colors border border-purple-600/30">🚫📚 ABW</button>
             {isAdmin && (
               <button onClick={onAdminPanel} className="px-3 py-2 bg-yellow-600/20 text-yellow-400 rounded-lg text-sm font-medium hover:bg-yellow-600/30 transition-colors border border-yellow-600/30">⚙️ Admin</button>
             )}
