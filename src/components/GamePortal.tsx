@@ -203,6 +203,9 @@ export function GamePortal({ username, isAdmin, onLogout, onAdminPanel }: GamePo
   const favGames = games.filter(g => favorites.includes(g.id));
   const popular = ['slope', 'retrobowl', 'cookieclicker', '1v1lol', 'geometrydash', 'smashkarts', 'krunker', 'agario', 'flappy', 'chromedino', 'minecraftclassic', 'garticphone'];
   const popularGames = popular.map(id => games.find(g => g.id === id)).filter(Boolean) as Game[];
+  if (showABW) {
+    return <AnythingButWork onBack={() => setShowABW(false)} />;
+  }
 
   if (activeGame) {
     return (
