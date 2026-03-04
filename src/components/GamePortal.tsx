@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { apiToggleFav, apiGetFavs, getCodeId } from '../lib/api';
 import { supabase } from '../integrations/supabase/client';
+import { AnythingButWork } from './AnythingButWork';
 
 interface GamePortalProps {
   username: string;
