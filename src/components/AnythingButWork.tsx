@@ -18,6 +18,7 @@ interface CornerItem {
   color: string;
   corner: string;
   openInNewTab?: boolean;
+  thumbnail?: string;
 }
 
 const corners: Corner[] = [
