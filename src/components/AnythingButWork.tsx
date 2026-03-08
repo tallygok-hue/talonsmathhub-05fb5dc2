@@ -27,9 +27,9 @@ const corners: Corner[] = [
   { id: 'nathaniel', name: "Nathaniel's Corner", emoji: '🎤', color: 'from-pink-500 to-purple-600', description: 'Every Friday Night Funkin\' mod imaginable' },
 ];
 
-const FNF_BASE = '/games/fnf/index.html';
+const FNF_BASE = '/games/fnf/week7/index.html';
 
-const fnfUrl = (mod: string) => `${FNF_BASE}?mod=${encodeURIComponent(mod)}`;
+const fnfUrl = (_mod: string) => FNF_BASE;
 
 const cornerItems: CornerItem[] = [
   // BENTLEY'S CORNER — AI
