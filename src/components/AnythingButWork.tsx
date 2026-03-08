@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { AIChatInterface } from './AIChatInterface';
 
 interface Corner {
@@ -120,8 +120,21 @@ export function AnythingButWork({ onBack }: AnythingButWorkProps) {
   const [activeCorner, setActiveCorner] = useState<string | null>(null);
   const [activeItem, setActiveItem] = useState<CornerItem | null>(null);
   const [iframeError, setIframeError] = useState(false);
+  const [iframeLoading, setIframeLoading] = useState(true);
+  const [retryCount, setRetryCount] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
   const [showAIChat, setShowAIChat] = useState(false);
+  const iframeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    setIframeError(false);
+    setIframeLoading(true);
+    if (iframeTimeoutRef.current) clearTimeout(iframeTimeoutRef.current);
+    if (activeItem) {
+      iframeTimeoutRef.current = setTimeout(() => setIframeLoading(false), 15000);
+    }
+    return () => { if (iframeTimeoutRef.current) clearTimeout(iframeTimeoutRef.current); };
+  }, [activeItem, retryCount]);
 
   const handleItemClick = (item: CornerItem) => {
     if (item.id === 'ai-chat') {
@@ -133,6 +146,7 @@ export function AnythingButWork({ onBack }: AnythingButWorkProps) {
     } else {
       setActiveItem(item);
       setIframeError(false);
+      setRetryCount(0);
     }
   };
 
@@ -157,23 +171,43 @@ export function AnythingButWork({ onBack }: AnythingButWorkProps) {
           <div className="flex-1 flex items-center justify-center bg-gray-950">
             <div className="text-center p-8 max-w-md">
               <div className="text-6xl mb-4">⚠️</div>
-              <h3 className="text-xl font-bold text-white mb-2">Blocked in Frame</h3>
-              <p className="text-gray-400 mb-6 text-sm">Open it in a new tab instead.</p>
-              <a href={activeItem.url} target="_blank" rel="noopener noreferrer"
-                className="px-6 py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition-colors text-lg inline-block">Open in New Tab ↗</a>
+              <h3 className="text-xl font-bold text-white mb-2">Failed to Load</h3>
+              <p className="text-gray-400 mb-2 text-sm">This content may be blocked, offline, or slow to respond.</p>
+              <p className="text-gray-600 text-xs mb-6 font-mono break-all">{activeItem.url}</p>
+              <div className="flex gap-3 justify-center flex-wrap">
+                <button onClick={() => { setIframeError(false); setIframeLoading(true); setRetryCount(c => c + 1); }}
+                  className="px-6 py-3 bg-purple-600 text-white rounded-xl font-semibold hover:bg-purple-700 transition-colors">🔄 Retry ({retryCount + 1})</button>
+                <a href={activeItem.url} target="_blank" rel="noopener noreferrer"
+                  className="px-6 py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition-colors text-lg">Open in New Tab ↗</a>
+                <button onClick={() => { setActiveItem(null); setIframeError(false); }}
+                  className="px-6 py-3 bg-gray-800 text-white rounded-xl font-semibold hover:bg-gray-700 transition-colors">Back</button>
+              </div>
             </div>
           </div>
         ) : (
-          <iframe
-            src={activeItem.url}
-            className="flex-1 w-full"
-            style={{ border: 'none', width: '100%', height: '100%' }}
-            allow="autoplay; keyboard-focus; fullscreen"
-            sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-modals allow-popups-to-escape-sandbox"
-            referrerPolicy="no-referrer"
-            onError={() => setIframeError(true)}
-            title={activeItem.name}
-          />
+          <div className="flex-1 relative">
+            {iframeLoading && (
+              <div className="absolute inset-0 bg-gray-950 flex items-center justify-center z-10">
+                <div className="text-center">
+                  <div className="w-12 h-12 border-4 border-pink-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+                  <p className="text-gray-400 text-sm mb-1">Loading {activeItem.name}...</p>
+                  <p className="text-gray-600 text-xs">If it takes too long, try opening in a new tab</p>
+                </div>
+              </div>
+            )}
+            <iframe
+              key={`abw-${retryCount}`}
+              src={activeItem.url}
+              className="w-full h-full absolute inset-0"
+              style={{ border: 'none' }}
+              allow="autoplay; keyboard-focus; fullscreen"
+              sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-modals allow-popups-to-escape-sandbox"
+              referrerPolicy="no-referrer"
+              onLoad={() => { setIframeLoading(false); if (iframeTimeoutRef.current) clearTimeout(iframeTimeoutRef.current); }}
+              onError={() => setIframeError(true)}
+              title={activeItem.name}
+            />
+          </div>
         )}
       </div>
     );

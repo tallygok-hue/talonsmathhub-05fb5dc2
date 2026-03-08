@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { apiToggleFav, apiGetFavs, getCodeId } from '../lib/api';
 import { supabase } from '../integrations/supabase/client';
 import { AnythingButWork } from './AnythingButWork';
@@ -150,6 +150,9 @@ export function GamePortal({ username, isAdmin, onLogout, onAdminPanel }: GamePo
   const [showFavsOnly, setShowFavsOnly] = useState(false);
   const [iframeError, setIframeError] = useState(false);
   const [newTabMode, setNewTabMode] = useState(false);
+  const [iframeLoading, setIframeLoading] = useState(true);
+  const [retryCount, setRetryCount] = useState(0);
+  const iframeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [favorites, setFavorites] = useState<string[]>([]);
   const [showABW, setShowABW] = useState(false);
 
@@ -182,7 +185,19 @@ export function GamePortal({ username, isAdmin, onLogout, onAdminPanel }: GamePo
     return () => { supabase.removeChannel(channel); };
   }, []);
 
-  useEffect(() => { setIframeError(false); setNewTabMode(false); }, [activeGame]);
+  useEffect(() => {
+    setIframeError(false);
+    setNewTabMode(false);
+    setIframeLoading(true);
+    setRetryCount(0);
+    if (iframeTimeoutRef.current) clearTimeout(iframeTimeoutRef.current);
+    if (activeGame) {
+      iframeTimeoutRef.current = setTimeout(() => {
+        setIframeLoading(false);
+      }, 15000);
+    }
+    return () => { if (iframeTimeoutRef.current) clearTimeout(iframeTimeoutRef.current); };
+  }, [activeGame, retryCount]);
 
   const toggleFav = useCallback(async (id: string) => {
     // Optimistic update
@@ -244,20 +259,41 @@ export function GamePortal({ username, isAdmin, onLogout, onAdminPanel }: GamePo
           <div className="flex-1 flex items-center justify-center bg-gray-950">
             <div className="text-center p-8 max-w-md">
               <div className="text-6xl mb-4">⚠️</div>
-              <h3 className="text-xl font-bold text-white mb-2">Blocked in Frame</h3>
-              <p className="text-gray-400 mb-2 text-sm">This game blocks iframe embedding. Open it in a new tab instead.</p>
+              <h3 className="text-xl font-bold text-white mb-2">Game Failed to Load</h3>
+              <p className="text-gray-400 mb-2 text-sm">This game may be blocked, offline, or slow to respond.</p>
               <p className="text-gray-600 text-xs mb-6 font-mono break-all">{activeGame.url}</p>
               <div className="flex gap-3 justify-center flex-wrap">
+                <button onClick={() => { setIframeError(false); setIframeLoading(true); setRetryCount(c => c + 1); }}
+                  className="px-6 py-3 bg-purple-600 text-white rounded-xl font-semibold hover:bg-purple-700 transition-colors">🔄 Retry ({retryCount + 1})</button>
                 <a href={activeGame.url} target="_blank" rel="noopener noreferrer" className="px-6 py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition-colors text-lg">🎮 Open in New Tab ↗</a>
                 <button onClick={() => setActiveGame(null)} className="px-6 py-3 bg-gray-800 text-white rounded-xl font-semibold hover:bg-gray-700 transition-colors">Back to Games</button>
               </div>
             </div>
           </div>
         ) : (
-          <iframe id="game-frame" src={activeGame.url} className="flex-1 w-full border-0"
-            allow="fullscreen; autoplay; gamepad; accelerometer; gyroscope; microphone; camera"
-            sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-modals allow-popups-to-escape-sandbox allow-downloads"
-            referrerPolicy="no-referrer" onError={() => setIframeError(true)} title={activeGame.name} />
+          <div className="flex-1 relative">
+            {iframeLoading && (
+              <div className="absolute inset-0 bg-gray-950 flex items-center justify-center z-10">
+                <div className="text-center">
+                  <div className="w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+                  <p className="text-gray-400 text-sm mb-1">Loading {activeGame.name}...</p>
+                  <p className="text-gray-600 text-xs">If it takes too long, try opening in a new tab</p>
+                </div>
+              </div>
+            )}
+            <iframe
+              key={`game-${retryCount}`}
+              id="game-frame"
+              src={activeGame.url}
+              className="w-full h-full border-0 absolute inset-0"
+              allow="fullscreen; autoplay; gamepad; accelerometer; gyroscope; microphone; camera"
+              sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-modals allow-popups-to-escape-sandbox allow-downloads"
+              referrerPolicy="no-referrer"
+              onLoad={() => { setIframeLoading(false); if (iframeTimeoutRef.current) clearTimeout(iframeTimeoutRef.current); }}
+              onError={() => setIframeError(true)}
+              title={activeGame.name}
+            />
+          </div>
         )}
       </div>
     );
