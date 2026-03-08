@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { apiToggleFav, apiGetFavs, getCodeId } from '../lib/api';
 import { supabase } from '../integrations/supabase/client';
 import { AnythingButWork } from './AnythingButWork';
