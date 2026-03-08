@@ -150,6 +150,9 @@ export function GamePortal({ username, isAdmin, onLogout, onAdminPanel }: GamePo
   const [showFavsOnly, setShowFavsOnly] = useState(false);
   const [iframeError, setIframeError] = useState(false);
   const [newTabMode, setNewTabMode] = useState(false);
+  const [iframeLoading, setIframeLoading] = useState(true);
+  const [retryCount, setRetryCount] = useState(0);
+  const iframeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [favorites, setFavorites] = useState<string[]>([]);
   const [showABW, setShowABW] = useState(false);
 
