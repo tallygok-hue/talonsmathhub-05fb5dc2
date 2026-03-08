@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { AIChatInterface } from './AIChatInterface';
 
 interface Corner {
   id: string;
@@ -29,7 +30,8 @@ const corners: Corner[] = [
 const FNF_BASE = 'https://intelleducation.netlify.app/gn-math';
 
 const cornerItems: CornerItem[] = [
-  // BENTLEY'S CORNER — AI (all open in new tab since they block iframes)
+  // BENTLEY'S CORNER — AI
+  { id: 'ai-chat', name: 'AI Chat (Built-in)', icon: '🤖', url: '', description: 'Chat with GPT-5, Gemini & more — right here!', color: 'from-emerald-500 to-cyan-600', corner: 'bentley' },
   { id: 'chatgpt', name: 'ChatGPT', icon: '💬', url: 'https://chat.openai.com/', description: 'OpenAI\'s conversational AI', color: 'from-green-500 to-teal-600', corner: 'bentley', openInNewTab: true },
   { id: 'gemini', name: 'Google Gemini', icon: '✨', url: 'https://gemini.google.com/', description: 'Google\'s multimodal AI', color: 'from-blue-500 to-indigo-600', corner: 'bentley', openInNewTab: true },
   { id: 'claude', name: 'Claude', icon: '🧠', url: 'https://claude.ai/', description: 'Anthropic\'s helpful AI assistant', color: 'from-amber-500 to-orange-600', corner: 'bentley', openInNewTab: true },
@@ -118,8 +120,13 @@ export function AnythingButWork({ onBack }: AnythingButWorkProps) {
   const [activeItem, setActiveItem] = useState<CornerItem | null>(null);
   const [iframeError, setIframeError] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [showAIChat, setShowAIChat] = useState(false);
 
   const handleItemClick = (item: CornerItem) => {
+    if (item.id === 'ai-chat') {
+      setShowAIChat(true);
+      return;
+    }
     if (item.openInNewTab) {
       window.open(item.url, '_blank', 'noopener,noreferrer');
     } else {
@@ -127,6 +134,10 @@ export function AnythingButWork({ onBack }: AnythingButWorkProps) {
       setIframeError(false);
     }
   };
+
+  if (showAIChat) {
+    return <AIChatInterface onBack={() => setShowAIChat(false)} />;
+  }
 
   if (activeItem) {
     return (
