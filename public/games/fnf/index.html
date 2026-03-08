@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Local FNF Rhythm</title>
+    <style>
+      :root {
+        color-scheme: dark;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+        background: radial-gradient(circle at top, #2b1744 0%, #0b0c14 60%);
+        color: #f5f7ff;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        padding: 12px;
+      }
+      .title {
+        text-align: center;
+      }
+      .title h1 {
+        margin: 0;
+        font-size: 1.4rem;
+      }
+      .title p {
+        margin: 4px 0 0;
+        color: #b6b9d8;
+        font-size: 0.9rem;
+      }
+      .hud {
+        width: min(780px, 100%);
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+        font-size: 0.9rem;
+        color: #d8dcff;
+      }
+      .game-wrap {
+        width: min(780px, 100%);
+        border: 1px solid #4e3f6b;
+        border-radius: 14px;
+        overflow: hidden;
+        background: linear-gradient(180deg, #151326 0%, #0c1020 100%);
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.45);
+      }
+      canvas {
+        width: 100%;
+        height: auto;
+        display: block;
+      }
+      .help {
+        text-align: center;
+        font-size: 0.82rem;
+        color: #aeb2cf;
+      }
+      .keys {
+        font-weight: 700;
+        color: #fff;
+        letter-spacing: 0.06em;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="title">
+      <h1 id="modName">Friday Night Funkin' Local</h1>
+      <p>Local fallback rhythm game (file-based, no external URL dependency)</p>
+    </div>
+
+    <div class="hud">
+      <span>Score: <strong id="score">0</strong></span>
+      <span>Combo: <strong id="combo">0</strong></span>
+      <span>Misses: <strong id="misses">0</strong></span>
+      <span>Best Combo: <strong id="best">0</strong></span>
+    </div>
+
+    <div class="game-wrap">
+      <canvas id="game" width="780" height="520" aria-label="Local rhythm game"></canvas>
+    </div>
+
+    <div class="help">
+      Hit notes when they reach the bottom line using
+      <span class="keys">A S K L</span>.
+      Press <span class="keys">R</span> to restart.
+    </div>
+
+    <script>
+      const params = new URLSearchParams(window.location.search);
+      const modName = params.get('mod') || "Friday Night Funkin' Local";
+      document.getElementById('modName').textContent = modName;
+
+      const canvas = document.getElementById('game');
+      const ctx = canvas.getContext('2d');
+      const laneCount = 4;
+      const laneWidth = canvas.width / laneCount;
+      const hitLineY = 430;
+      const noteHeight = 22;
+
+      const scoreEl = document.getElementById('score');
+      const comboEl = document.getElementById('combo');
+      const missesEl = document.getElementById('misses');
+      const bestEl = document.getElementById('best');
+
+      const keys = ['a', 's', 'k', 'l'];
+      const laneColors = ['#48c2ff', '#6dff90', '#ff9e59', '#ff67d4'];
+      const notes = [];
+      const pressed = new Set();
+
+      let score = 0;
+      let combo = 0;
+      let misses = 0;
+      let bestCombo = 0;
+      let spawnTimer = 0;
+      let lastTime = performance.now();
+
+      const seed = Array.from(modName).reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
+      const baseSpeed = 230 + (seed % 80);
+      const spawnRate = 0.42 + (seed % 5) * 0.02;
+
+      function reset() {
+        notes.length = 0;
+        score = 0;
+        combo = 0;
+        misses = 0;
+        bestCombo = 0;
+        spawnTimer = 0;
+        updateHud();
+      }
+
+      function updateHud() {
+        scoreEl.textContent = String(score);
+        comboEl.textContent = String(combo);
+        missesEl.textContent = String(misses);
+        bestEl.textContent = String(bestCombo);
+      }
+
+      function spawnNote() {
+        notes.push({
+          lane: Math.floor(Math.random() * laneCount),
+          y: -noteHeight,
+          speed: baseSpeed + Math.random() * 40,
+        });
+      }
+
+      function hitLane(lane) {
+        const windowPx = 34;
+        let bestIndex = -1;
+        let bestDist = Number.POSITIVE_INFINITY;
+
+        for (let i = 0; i < notes.length; i++) {
+          if (notes[i].lane !== lane) continue;
+          const dist = Math.abs(notes[i].y - hitLineY);
+          if (dist < bestDist) {
+            bestDist = dist;
+            bestIndex = i;
+          }
+        }
+
+        if (bestIndex >= 0 && bestDist <= windowPx) {
+          notes.splice(bestIndex, 1);
+          const gain = Math.max(50, 120 - Math.floor(bestDist * 2));
+          score += gain;
+          combo += 1;
+          bestCombo = Math.max(bestCombo, combo);
+        } else {
+          misses += 1;
+          combo = 0;
+        }
+
+        updateHud();
+      }
+
+      function update(dt) {
+        spawnTimer += dt;
+        if (spawnTimer >= spawnRate) {
+          spawnTimer = 0;
+          spawnNote();
+        }
+
+        for (let i = notes.length - 1; i >= 0; i--) {
+          notes[i].y += notes[i].speed * dt;
+          if (notes[i].y > canvas.height) {
+            notes.splice(i, 1);
+            misses += 1;
+            combo = 0;
+            updateHud();
+          }
+        }
+      }
+
+      function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        const bg = ctx.createLinearGradient(0, 0, 0, canvas.height);
+        bg.addColorStop(0, '#17192f');
+        bg.addColorStop(1, '#0c1020');
+        ctx.fillStyle = bg;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        for (let lane = 0; lane < laneCount; lane++) {
+          const x = lane * laneWidth;
+          ctx.fillStyle = lane % 2 === 0 ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.06)';
+          ctx.fillRect(x, 0, laneWidth, canvas.height);
+
+          ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+          ctx.strokeRect(x, 0, laneWidth, canvas.height);
+
+          ctx.fillStyle = pressed.has(keys[lane]) ? laneColors[lane] : 'rgba(255,255,255,0.3)';
+          ctx.fillRect(x + 12, hitLineY, laneWidth - 24, 10);
+        }
+
+        ctx.strokeStyle = 'rgba(255,255,255,0.6)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(0, hitLineY + noteHeight);
+        ctx.lineTo(canvas.width, hitLineY + noteHeight);
+        ctx.stroke();
+
+        for (const note of notes) {
+          const x = note.lane * laneWidth + 14;
+          ctx.fillStyle = laneColors[note.lane];
+          ctx.fillRect(x, note.y, laneWidth - 28, noteHeight);
+          ctx.fillStyle = 'rgba(255,255,255,0.25)';
+          ctx.fillRect(x, note.y, laneWidth - 28, 5);
+        }
+      }
+
+      function frame(now) {
+        const dt = Math.min((now - lastTime) / 1000, 0.033);
+        lastTime = now;
+
+        update(dt);
+        draw();
+        requestAnimationFrame(frame);
+      }
+
+      window.addEventListener('keydown', (e) => {
+        const key = e.key.toLowerCase();
+        if (key === 'r') {
+          reset();
+          return;
+        }
+        if (!keys.includes(key) || pressed.has(key)) return;
+        pressed.add(key);
+        hitLane(keys.indexOf(key));
+      });
+
+      window.addEventListener('keyup', (e) => {
+        pressed.delete(e.key.toLowerCase());
+      });
+
+      reset();
+      requestAnimationFrame(frame);
+    </script>
+  </body>
+</html>
