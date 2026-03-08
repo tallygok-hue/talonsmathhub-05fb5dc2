@@ -277,8 +277,12 @@ export function AnythingButWork({ onBack }: AnythingButWorkProps) {
                 {filteredItems.map(item => (
                   <div key={item.id} onClick={() => handleItemClick(item)}
                     className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden hover:border-gray-600 hover:shadow-lg transition-all group cursor-pointer">
-                    <div className={`h-20 bg-gradient-to-br ${item.color} flex items-center justify-center relative`}>
-                      <span className="text-3xl group-hover:scale-110 transition-transform drop-shadow-lg">{item.icon}</span>
+                    <div className={`h-24 bg-gradient-to-br ${item.color} flex items-center justify-center relative overflow-hidden`}>
+                      {item.thumbnail ? (
+                        <img src={item.thumbnail} alt={item.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform" />
+                      ) : (
+                        <span className="text-3xl group-hover:scale-110 transition-transform drop-shadow-lg">{item.icon}</span>
+                      )}
                       {item.openInNewTab && (
                         <span className="absolute top-1 right-1 bg-black/40 text-white text-[9px] px-1.5 py-0.5 rounded-full font-bold">↗ TAB</span>
                       )}
