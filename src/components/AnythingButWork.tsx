@@ -120,8 +120,21 @@ export function AnythingButWork({ onBack }: AnythingButWorkProps) {
   const [activeCorner, setActiveCorner] = useState<string | null>(null);
   const [activeItem, setActiveItem] = useState<CornerItem | null>(null);
   const [iframeError, setIframeError] = useState(false);
+  const [iframeLoading, setIframeLoading] = useState(true);
+  const [retryCount, setRetryCount] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
   const [showAIChat, setShowAIChat] = useState(false);
+  const iframeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    setIframeError(false);
+    setIframeLoading(true);
+    if (iframeTimeoutRef.current) clearTimeout(iframeTimeoutRef.current);
+    if (activeItem) {
+      iframeTimeoutRef.current = setTimeout(() => setIframeLoading(false), 15000);
+    }
+    return () => { if (iframeTimeoutRef.current) clearTimeout(iframeTimeoutRef.current); };
+  }, [activeItem, retryCount]);
 
   const handleItemClick = (item: CornerItem) => {
     if (item.id === 'ai-chat') {
@@ -133,6 +146,7 @@ export function AnythingButWork({ onBack }: AnythingButWorkProps) {
     } else {
       setActiveItem(item);
       setIframeError(false);
+      setRetryCount(0);
     }
   };
 
