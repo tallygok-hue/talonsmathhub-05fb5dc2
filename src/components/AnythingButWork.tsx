@@ -109,6 +109,7 @@ const cornerItems: CornerItem[] = [
   { id: 'fnf-rev', name: 'FNF Rev Mixed', icon: '🔀', url: `${FNF_BASE}/friday-night-funkin-rev-mixed/index.html`, description: 'Remixed and revved up!', color: 'from-teal-500 to-cyan-600', corner: 'nathaniel' },
   { id: 'fnf-impostor-alt', name: 'FNF vs Impostor Alternated', icon: '📮', url: `${FNF_BASE}/friday-night-funkin-vs-impostor-alternated/index.html`, description: 'Alternate impostor mod!', color: 'from-red-700 to-gray-800', corner: 'nathaniel' },
   { id: 'fnf-rewrite', name: 'VS Rewrite Round 2', icon: '✏️', url: `${FNF_BASE}/vs-rewrite-round-2/index.html`, description: 'Rewritten and remixed!', color: 'from-violet-500 to-indigo-700', corner: 'nathaniel' },
+  { id: 'fernis-best', name: 'Fernis Best', icon: '🎮', url: 'https://s3.amazonaws.com/fernisbest/index.html', description: 'Classic fun game!', color: 'from-emerald-500 to-teal-700', corner: 'nathaniel' },
 ];
 
 interface AnythingButWorkProps {
