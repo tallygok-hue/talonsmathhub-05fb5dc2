@@ -27,7 +27,9 @@ const corners: Corner[] = [
   { id: 'nathaniel', name: "Nathaniel's Corner", emoji: '🎤', color: 'from-pink-500 to-purple-600', description: 'Every Friday Night Funkin\' mod imaginable' },
 ];
 
-const FNF_BASE = 'https://intelleducation.netlify.app/gn-math';
+const FNF_BASE = '/games/fnf/index.html';
+
+const fnfUrl = (mod: string) => `${FNF_BASE}?mod=${encodeURIComponent(mod)}`;
 
 const cornerItems: CornerItem[] = [
   // BENTLEY'S CORNER — AI
@@ -85,30 +87,30 @@ const cornerItems: CornerItem[] = [
   { id: 'impossiblequiz', name: 'The Impossible Quiz', icon: '❓', url: 'https://theimpossiblequiz.io/', description: 'Trick question madness!', color: 'from-blue-600 to-purple-700', corner: 'jayson' },
   { id: 'gettingoverit', name: 'Getting Over It', icon: '🏔️', url: 'https://www.poki.com/en/g/getting-over-it', description: 'Rage-inducing climbing!', color: 'from-amber-700 to-stone-800', corner: 'jayson' },
 
-  // NATHANIEL'S CORNER — FNF Mods (embedded via intelleducation.netlify.app)
-  { id: 'fnf-bob-v2', name: 'FNF vs Bob V2', icon: '😐', url: `${FNF_BASE}/fnf-vs-bob-v2/index.html`, description: 'Bob is mad again!', color: 'from-green-500 to-green-700', corner: 'nathaniel' },
-  { id: 'fnf-pibby', name: 'FNF vs Pibby Corrupted', icon: '📺', url: `${FNF_BASE}/fnf-vs-pibby-corrupted/index.html`, description: 'Pibby apocalypse!', color: 'from-purple-700 to-gray-900', corner: 'nathaniel' },
-  { id: 'fnf-hypno', name: "FNF Hypno's Lullaby V2", icon: '😴', url: `${FNF_BASE}/fnf-vs-hypnos-lullaby-v2/index.html`, description: 'Creepy Pokémon mod!', color: 'from-yellow-600 to-purple-800', corner: 'nathaniel' },
-  { id: 'fnf-sonic', name: 'FNF vs Sonic.EXE', icon: '🦔', url: `${FNF_BASE}/fnf-vs-sonic-exe/index.html`, description: 'Creepy Sonic rap battle!', color: 'from-blue-700 to-red-800', corner: 'nathaniel' },
-  { id: 'fnf-carol', name: 'FNF vs Carol V2', icon: '🎸', url: `${FNF_BASE}/friday-night-funkin-vs-carol-v2/index.html`, description: 'Rock out with Carol!', color: 'from-pink-500 to-red-600', corner: 'nathaniel' },
-  { id: 'fnf-impostor', name: 'FNF vs Impostor V4', icon: '📮', url: `${FNF_BASE}/friday-night-funkin-vs-impostor-v4/index.html`, description: 'Among Us crossover!', color: 'from-red-500 to-red-700', corner: 'nathaniel' },
-  { id: 'fnf-nonsense', name: 'FNF vs Nonsense', icon: '🤪', url: `${FNF_BASE}/friday-night-funkin-vs-nonsense/index.html`, description: 'Pure chaos rap battle!', color: 'from-yellow-300 to-orange-400', corner: 'nathaniel' },
-  { id: 'fnf-sunday', name: 'FNF vs Sunday Remastered', icon: '☀️', url: `${FNF_BASE}/friday-night-funkin-vs-sunday-remastered-hd/index.html`, description: 'Sunday HD remaster!', color: 'from-orange-400 to-yellow-500', corner: 'nathaniel' },
-  { id: 'fnf-tabi', name: 'FNF vs Tabi', icon: '💀', url: `${FNF_BASE}/friday-night-funkin-vs-tabi/index.html`, description: 'Ex-boyfriend revenge!', color: 'from-gray-700 to-gray-900', corner: 'nathaniel' },
-  { id: 'fnf-zardy', name: 'FNF vs Zardy', icon: '🌽', url: `${FNF_BASE}/friday-night-funkin-vs-zardy/index.html`, description: 'Scarecrow showdown!', color: 'from-amber-700 to-green-900', corner: 'nathaniel' },
-  { id: 'fnf-dave', name: 'FNF vs Dave & Bambi V3', icon: '🌾', url: `${FNF_BASE}/friday-night-funkin-vs-dave-and-bambi-v3/index.html`, description: 'Dave & Bambi chaos!', color: 'from-green-500 to-lime-600', corner: 'nathaniel' },
-  { id: 'fnf-dsides', name: 'FNF D-Sides', icon: '🔄', url: `${FNF_BASE}/friday-night-funkin-d-sides/index.html`, description: 'Alternate universe remix!', color: 'from-indigo-600 to-purple-700', corner: 'nathaniel' },
-  { id: 'fnf-droproll', name: 'FNF Drop and Roll', icon: '🎲', url: `${FNF_BASE}/friday-night-funkin-drop-and-roll/index.html`, description: 'Drop & roll to the beat!', color: 'from-cyan-500 to-blue-600', corner: 'nathaniel' },
-  { id: 'fnf-suicide', name: 'FNF Sunday Night Suicide', icon: '🐭', url: `${FNF_BASE}/friday-night-funkin-sunday-night-suicide/index.html`, description: 'Creepypasta Mickey!', color: 'from-gray-600 to-gray-900', corner: 'nathaniel' },
-  { id: 'fnf-bsides', name: 'FNF vs Impostor B-Sides', icon: '📮', url: `${FNF_BASE}/friday-night-funkin-vs-impostor-b-sides/index.html`, description: 'B-Side impostor remix!', color: 'from-red-600 to-purple-700', corner: 'nathaniel' },
-  { id: 'fnf-infidelity', name: "FNF Wednesday's Infidelity", icon: '📅', url: `${FNF_BASE}/friday-night-funkin-wednesdays-infidelity/index.html`, description: 'Creepy Wednesday mod!', color: 'from-gray-800 to-red-900', corner: 'nathaniel' },
-  { id: 'fnf-akage', name: 'FNF Akage', icon: '🔥', url: `${FNF_BASE}/friday-night-funkin-akage/index.html`, description: 'Red-hot rhythm battle!', color: 'from-red-500 to-orange-600', corner: 'nathaniel' },
-  { id: 'fnf-chaos', name: 'FNF Chaos Nightmare', icon: '🌀', url: `${FNF_BASE}/friday-night-funkin-chaos-nightmare/index.html`, description: 'Nightmare fuel!', color: 'from-purple-800 to-gray-950', corner: 'nathaniel' },
-  { id: 'fnf-gumballs', name: 'FNF Gumballs', icon: '🔵', url: `${FNF_BASE}/friday-night-funkin-gumballs/index.html`, description: 'Gumball machine madness!', color: 'from-blue-400 to-pink-500', corner: 'nathaniel' },
-  { id: 'fnf-heartbreak', name: 'FNF Heartbreak Havoc', icon: '💔', url: `${FNF_BASE}/friday-night-funkin-heartbreak-havoc/index.html`, description: 'Heartbreak rap battle!', color: 'from-rose-500 to-red-700', corner: 'nathaniel' },
-  { id: 'fnf-rev', name: 'FNF Rev Mixed', icon: '🔀', url: `${FNF_BASE}/friday-night-funkin-rev-mixed/index.html`, description: 'Remixed and revved up!', color: 'from-teal-500 to-cyan-600', corner: 'nathaniel' },
-  { id: 'fnf-impostor-alt', name: 'FNF vs Impostor Alternated', icon: '📮', url: `${FNF_BASE}/friday-night-funkin-vs-impostor-alternated/index.html`, description: 'Alternate impostor mod!', color: 'from-red-700 to-gray-800', corner: 'nathaniel' },
-  { id: 'fnf-rewrite', name: 'VS Rewrite Round 2', icon: '✏️', url: `${FNF_BASE}/vs-rewrite-round-2/index.html`, description: 'Rewritten and remixed!', color: 'from-violet-500 to-indigo-700', corner: 'nathaniel' },
+  // NATHANIEL'S CORNER — FNF Mods (served from local files)
+  { id: 'fnf-bob-v2', name: 'FNF vs Bob V2', icon: '😐', url: fnfUrl('FNF vs Bob V2'), description: 'Bob is mad again!', color: 'from-green-500 to-green-700', corner: 'nathaniel' },
+  { id: 'fnf-pibby', name: 'FNF vs Pibby Corrupted', icon: '📺', url: fnfUrl('FNF vs Pibby Corrupted'), description: 'Pibby apocalypse!', color: 'from-purple-700 to-gray-900', corner: 'nathaniel' },
+  { id: 'fnf-hypno', name: "FNF Hypno's Lullaby V2", icon: '😴', url: fnfUrl("FNF Hypno's Lullaby V2"), description: 'Creepy Pokémon mod!', color: 'from-yellow-600 to-purple-800', corner: 'nathaniel' },
+  { id: 'fnf-sonic', name: 'FNF vs Sonic.EXE', icon: '🦔', url: fnfUrl('FNF vs Sonic.EXE'), description: 'Creepy Sonic rap battle!', color: 'from-blue-700 to-red-800', corner: 'nathaniel' },
+  { id: 'fnf-carol', name: 'FNF vs Carol V2', icon: '🎸', url: fnfUrl('FNF vs Carol V2'), description: 'Rock out with Carol!', color: 'from-pink-500 to-red-600', corner: 'nathaniel' },
+  { id: 'fnf-impostor', name: 'FNF vs Impostor V4', icon: '📮', url: fnfUrl('FNF vs Impostor V4'), description: 'Among Us crossover!', color: 'from-red-500 to-red-700', corner: 'nathaniel' },
+  { id: 'fnf-nonsense', name: 'FNF vs Nonsense', icon: '🤪', url: fnfUrl('FNF vs Nonsense'), description: 'Pure chaos rap battle!', color: 'from-yellow-300 to-orange-400', corner: 'nathaniel' },
+  { id: 'fnf-sunday', name: 'FNF vs Sunday Remastered', icon: '☀️', url: fnfUrl('FNF vs Sunday Remastered'), description: 'Sunday HD remaster!', color: 'from-orange-400 to-yellow-500', corner: 'nathaniel' },
+  { id: 'fnf-tabi', name: 'FNF vs Tabi', icon: '💀', url: fnfUrl('FNF vs Tabi'), description: 'Ex-boyfriend revenge!', color: 'from-gray-700 to-gray-900', corner: 'nathaniel' },
+  { id: 'fnf-zardy', name: 'FNF vs Zardy', icon: '🌽', url: fnfUrl('FNF vs Zardy'), description: 'Scarecrow showdown!', color: 'from-amber-700 to-green-900', corner: 'nathaniel' },
+  { id: 'fnf-dave', name: 'FNF vs Dave & Bambi V3', icon: '🌾', url: fnfUrl('FNF vs Dave & Bambi V3'), description: 'Dave & Bambi chaos!', color: 'from-green-500 to-lime-600', corner: 'nathaniel' },
+  { id: 'fnf-dsides', name: 'FNF D-Sides', icon: '🔄', url: fnfUrl('FNF D-Sides'), description: 'Alternate universe remix!', color: 'from-indigo-600 to-purple-700', corner: 'nathaniel' },
+  { id: 'fnf-droproll', name: 'FNF Drop and Roll', icon: '🎲', url: fnfUrl('FNF Drop and Roll'), description: 'Drop & roll to the beat!', color: 'from-cyan-500 to-blue-600', corner: 'nathaniel' },
+  { id: 'fnf-suicide', name: 'FNF Sunday Night Suicide', icon: '🐭', url: fnfUrl('FNF Sunday Night Suicide'), description: 'Creepypasta Mickey!', color: 'from-gray-600 to-gray-900', corner: 'nathaniel' },
+  { id: 'fnf-bsides', name: 'FNF vs Impostor B-Sides', icon: '📮', url: fnfUrl('FNF vs Impostor B-Sides'), description: 'B-Side impostor remix!', color: 'from-red-600 to-purple-700', corner: 'nathaniel' },
+  { id: 'fnf-infidelity', name: "FNF Wednesday's Infidelity", icon: '📅', url: fnfUrl("FNF Wednesday's Infidelity"), description: 'Creepy Wednesday mod!', color: 'from-gray-800 to-red-900', corner: 'nathaniel' },
+  { id: 'fnf-akage', name: 'FNF Akage', icon: '🔥', url: fnfUrl('FNF Akage'), description: 'Red-hot rhythm battle!', color: 'from-red-500 to-orange-600', corner: 'nathaniel' },
+  { id: 'fnf-chaos', name: 'FNF Chaos Nightmare', icon: '🌀', url: fnfUrl('FNF Chaos Nightmare'), description: 'Nightmare fuel!', color: 'from-purple-800 to-gray-950', corner: 'nathaniel' },
+  { id: 'fnf-gumballs', name: 'FNF Gumballs', icon: '🔵', url: fnfUrl('FNF Gumballs'), description: 'Gumball machine madness!', color: 'from-blue-400 to-pink-500', corner: 'nathaniel' },
+  { id: 'fnf-heartbreak', name: 'FNF Heartbreak Havoc', icon: '💔', url: fnfUrl('FNF Heartbreak Havoc'), description: 'Heartbreak rap battle!', color: 'from-rose-500 to-red-700', corner: 'nathaniel' },
+  { id: 'fnf-rev', name: 'FNF Rev Mixed', icon: '🔀', url: fnfUrl('FNF Rev Mixed'), description: 'Remixed and revved up!', color: 'from-teal-500 to-cyan-600', corner: 'nathaniel' },
+  { id: 'fnf-impostor-alt', name: 'FNF vs Impostor Alternated', icon: '📮', url: fnfUrl('FNF vs Impostor Alternated'), description: 'Alternate impostor mod!', color: 'from-red-700 to-gray-800', corner: 'nathaniel' },
+  { id: 'fnf-rewrite', name: 'VS Rewrite Round 2', icon: '✏️', url: fnfUrl('VS Rewrite Round 2'), description: 'Rewritten and remixed!', color: 'from-violet-500 to-indigo-700', corner: 'nathaniel' },
   { id: 'fernis-best', name: 'Fernis Best', icon: '🎮', url: 'https://s3.amazonaws.com/fernisbest/index.html', description: 'Classic fun game!', color: 'from-emerald-500 to-teal-700', corner: 'nathaniel' },
 ];
 
