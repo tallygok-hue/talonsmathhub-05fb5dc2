@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { AIChatInterface } from './AIChatInterface';
 
 interface Corner {
   id: string;
