@@ -26,6 +26,8 @@ const corners: Corner[] = [
   { id: 'nathaniel', name: "Nathaniel's Corner", emoji: '🎤', color: 'from-pink-500 to-purple-600', description: 'Every Friday Night Funkin\' mod imaginable' },
 ];
 
+const FNF_BASE = 'https://intelleducation.netlify.app/gn-math';
+
 const cornerItems: CornerItem[] = [
   // BENTLEY'S CORNER — AI (all open in new tab since they block iframes)
   { id: 'chatgpt', name: 'ChatGPT', icon: '💬', url: 'https://chat.openai.com/', description: 'OpenAI\'s conversational AI', color: 'from-green-500 to-teal-600', corner: 'bentley', openInNewTab: true },
@@ -81,38 +83,30 @@ const cornerItems: CornerItem[] = [
   { id: 'impossiblequiz', name: 'The Impossible Quiz', icon: '❓', url: 'https://theimpossiblequiz.io/', description: 'Trick question madness!', color: 'from-blue-600 to-purple-700', corner: 'jayson' },
   { id: 'gettingoverit', name: 'Getting Over It', icon: '🏔️', url: 'https://www.poki.com/en/g/getting-over-it', description: 'Rage-inducing climbing!', color: 'from-amber-700 to-stone-800', corner: 'jayson' },
 
-  // NATHANIEL'S CORNER — FNF Mods (working URLs from fnfgo.com & fnfmods.xyz)
-  { id: 'fnf-base', name: 'Friday Night Funkin\'', icon: '🎤', url: 'https://www.fnfgo.com/fnf-full-week/', description: 'The original FNF!', color: 'from-cyan-500 to-blue-600', corner: 'nathaniel' },
-  { id: 'fnf-tricky', name: 'FNF vs Tricky HD', icon: '🤡', url: 'https://www.fnfgo.com/vs-tricky-full-hd/', description: 'Face the clown from Madness!', color: 'from-green-600 to-green-800', corner: 'nathaniel' },
-  { id: 'fnf-whitty', name: 'FNF vs Whitty', icon: '💣', url: 'https://www.fnfgo.com/vs-whitty-full-week/', description: 'Bomb-headed rap battle!', color: 'from-orange-500 to-red-600', corner: 'nathaniel' },
-  { id: 'fnf-garcello', name: 'FNF vs Garcello', icon: '🚬', url: 'https://www.fnfgo.com/vs-garcello/', description: 'Smoke \'em out funk!', color: 'from-purple-600 to-purple-800', corner: 'nathaniel' },
-  { id: 'fnf-hex', name: 'FNF vs Hex', icon: '🤖', url: 'https://www.fnfgo.com/fnf-vs-hex-mod-full-week/', description: 'Battle the basketball robot!', color: 'from-blue-500 to-blue-700', corner: 'nathaniel' },
-  { id: 'fnf-sarvente', name: 'FNF Mid-Fight Masses', icon: '⛪', url: 'https://www.fnfgo.com/sarventes-mid-fight-masses/', description: 'Church rap battle!', color: 'from-pink-500 to-red-600', corner: 'nathaniel' },
-  { id: 'fnf-agoti', name: 'FNF vs AGOTI', icon: '🎹', url: 'https://www.fnfgo.com/fnf-vs-agoti/', description: 'Void dimension rap battle!', color: 'from-indigo-600 to-indigo-800', corner: 'nathaniel' },
-  { id: 'fnf-tabi', name: 'FNF vs Tabi', icon: '💀', url: 'https://www.fnfgo.com/fnf-vs-tabi-ex-boyfriend/', description: 'Ex-boyfriend revenge!', color: 'from-gray-700 to-gray-900', corner: 'nathaniel' },
-  { id: 'fnf-shaggy', name: 'FNF vs Shaggy v2', icon: '🟢', url: 'https://www.fnfgo.com/vs-shaggy-v2/', description: 'Ultra instinct Shaggy!', color: 'from-lime-500 to-green-700', corner: 'nathaniel' },
-  { id: 'fnf-sky', name: 'FNF vs Sky', icon: '☁️', url: 'https://www.fnfgo.com/vs-sky-full-week-2/', description: 'Obsessed fangirl!', color: 'from-sky-400 to-blue-500', corner: 'nathaniel' },
-  { id: 'fnf-nonsense', name: 'FNF vs Nonsense', icon: '🤪', url: 'https://www.fnfgo.com/fnf-vs-nonsense/', description: 'Pure chaos rap battle!', color: 'from-yellow-300 to-orange-400', corner: 'nathaniel' },
-  { id: 'fnf-indie', name: 'FNF Indie Cross', icon: '🎮', url: 'https://www.fnfgo.com/fnf-vs-indie-cross/', description: 'Sans, Cuphead, Bendy!', color: 'from-purple-600 to-indigo-800', corner: 'nathaniel' },
-  { id: 'fnf-sonic', name: 'FNF vs Sonic.EXE', icon: '🦔', url: 'https://www.fnfgo.com/fnf-vs-sonic-exe/', description: 'Creepy Sonic rap battle!', color: 'from-blue-700 to-red-800', corner: 'nathaniel' },
-  { id: 'fnf-huggy', name: 'FNF vs Huggy Wuggy', icon: '🧸', url: 'https://www.fnfgo.com/fnf-vs-huggy-wuggy-poppy-playtime/', description: 'Poppy Playtime crossover!', color: 'from-blue-500 to-blue-800', corner: 'nathaniel' },
-  { id: 'fnf-silly', name: 'FNF Silly Billy', icon: '🤠', url: 'https://www.fnfgo.com/fnf-silly-billy/', description: 'The viral Silly Billy mod!', color: 'from-yellow-500 to-orange-600', corner: 'nathaniel' },
-  { id: 'fnf-impostor', name: 'FNF vs Impostor V4', icon: '📮', url: 'https://www.fnfgo.com/fnf-vs-impostor-among-us-v4/', description: 'Among Us crossover!', color: 'from-red-500 to-red-700', corner: 'nathaniel' },
-  { id: 'fnf-kapi', name: 'FNF vs Kapi', icon: '🐱', url: 'https://www.fnfgo.com/fnf-vs-kapi/', description: 'DDR dance battle!', color: 'from-yellow-400 to-amber-500', corner: 'nathaniel' },
-  { id: 'fnf-corruption', name: 'FNF Corruption', icon: '🦠', url: 'https://www.fnfgo.com/fnf-corruption/', description: 'The corruption spreads!', color: 'from-purple-800 to-gray-950', corner: 'nathaniel' },
-  { id: 'fnf-pibby', name: 'FNF vs Pibby Corrupted', icon: '📺', url: 'https://www.fnfgo.com/fnf-vs-pibby-corrupted/', description: 'Pibby apocalypse!', color: 'from-purple-700 to-gray-900', corner: 'nathaniel' },
-  { id: 'fnf-suicide', name: 'FNF vs Suicide Mouse', icon: '🐭', url: 'https://www.fnfgo.com/fnf-vs-suicide-mouse-v2/', description: 'Creepypasta Mickey!', color: 'from-gray-600 to-gray-900', corner: 'nathaniel' },
-  { id: 'fnf-miku', name: 'FNF vs Hatsune Miku', icon: '🎵', url: 'https://www.fnfgo.com/fnf-vs-hatsune-miku/', description: 'Vocaloid crossover!', color: 'from-teal-400 to-cyan-600', corner: 'nathaniel' },
-  { id: 'fnf-qt', name: 'FNF vs QT', icon: '🤖', url: 'https://www.fnfgo.com/fnf-vs-qt-mod/', description: 'Robot girl rap battle!', color: 'from-pink-400 to-pink-600', corner: 'nathaniel' },
-  { id: 'fnf-ddlc', name: 'FNF vs Doki Doki', icon: '📖', url: 'https://www.fnfgo.com/fnf-vs-doki-doki-takeover-ddlc/', description: 'DDLC crossover!', color: 'from-pink-400 to-rose-600', corner: 'nathaniel' },
-  { id: 'fnf-mario', name: "FNF Mario's Madness", icon: '🍄', url: 'https://www.fnfgo.com/fnf-vs-marios-madness-v2/', description: 'Creepy Mario mod!', color: 'from-red-500 to-red-800', corner: 'nathaniel' },
-  { id: 'fnf-bob', name: 'FNF vs Bob & Bosip', icon: '😐', url: 'https://www.fnfgo.com/fnf-vs-bob-and-bosip-the-expansion-update/', description: 'Bob & Bosip expansion!', color: 'from-green-400 to-green-600', corner: 'nathaniel' },
-  { id: 'fnf-catnap', name: 'FNF vs CatNap V2', icon: '😺', url: 'https://www.fnfgo.com/fnf-vs-catnap-v2/', description: 'Poppy Playtime CatNap!', color: 'from-purple-500 to-indigo-700', corner: 'nathaniel' },
-  { id: 'fnf-rainbow', name: 'FNF vs Rainbow Friends', icon: '🌈', url: 'https://www.fnfgo.com/fnf-vs-rainbow-friends/', description: 'Roblox horror crossover!', color: 'from-blue-500 to-green-500', corner: 'nathaniel' },
-  { id: 'fnf-pibby-apoc', name: 'FNF Pibby Apocalypse', icon: '🌍', url: 'https://www.fnfgo.com/fnf-pibby-apocalypse/', description: 'Full Pibby apocalypse!', color: 'from-red-700 to-purple-800', corner: 'nathaniel' },
-  { id: 'fnf-playground', name: 'FNF Character Test', icon: '🎯', url: 'https://www.fnfgo.com/fnf-character-test-playground/', description: 'Test any FNF character!', color: 'from-cyan-500 to-blue-500', corner: 'nathaniel' },
-  { id: 'fnf-sonic-xyz', name: 'FNF vs Sonic.EXE (Alt)', icon: '🦔', url: 'https://fnfmods.xyz/games/friday-night-funkin-vs-sonic-exe-mod', description: 'Sonic.EXE alternate site!', color: 'from-blue-600 to-red-700', corner: 'nathaniel' },
-  { id: 'fnf-tricky-xyz', name: 'FNF vs Tricky (Alt)', icon: '🤡', url: 'https://fnfmods.xyz/games/friday-night-funkin-vs-tricky-hd-mod', description: 'Tricky alternate site!', color: 'from-green-500 to-green-700', corner: 'nathaniel' },
+  // NATHANIEL'S CORNER — FNF Mods (embedded via intelleducation.netlify.app)
+  { id: 'fnf-bob-v2', name: 'FNF vs Bob V2', icon: '😐', url: `${FNF_BASE}/fnf-vs-bob-v2/index.html`, description: 'Bob is mad again!', color: 'from-green-500 to-green-700', corner: 'nathaniel' },
+  { id: 'fnf-pibby', name: 'FNF vs Pibby Corrupted', icon: '📺', url: `${FNF_BASE}/fnf-vs-pibby-corrupted/index.html`, description: 'Pibby apocalypse!', color: 'from-purple-700 to-gray-900', corner: 'nathaniel' },
+  { id: 'fnf-hypno', name: "FNF Hypno's Lullaby V2", icon: '😴', url: `${FNF_BASE}/fnf-vs-hypnos-lullaby-v2/index.html`, description: 'Creepy Pokémon mod!', color: 'from-yellow-600 to-purple-800', corner: 'nathaniel' },
+  { id: 'fnf-sonic', name: 'FNF vs Sonic.EXE', icon: '🦔', url: `${FNF_BASE}/fnf-vs-sonic-exe/index.html`, description: 'Creepy Sonic rap battle!', color: 'from-blue-700 to-red-800', corner: 'nathaniel' },
+  { id: 'fnf-carol', name: 'FNF vs Carol V2', icon: '🎸', url: `${FNF_BASE}/friday-night-funkin-vs-carol-v2/index.html`, description: 'Rock out with Carol!', color: 'from-pink-500 to-red-600', corner: 'nathaniel' },
+  { id: 'fnf-impostor', name: 'FNF vs Impostor V4', icon: '📮', url: `${FNF_BASE}/friday-night-funkin-vs-impostor-v4/index.html`, description: 'Among Us crossover!', color: 'from-red-500 to-red-700', corner: 'nathaniel' },
+  { id: 'fnf-nonsense', name: 'FNF vs Nonsense', icon: '🤪', url: `${FNF_BASE}/friday-night-funkin-vs-nonsense/index.html`, description: 'Pure chaos rap battle!', color: 'from-yellow-300 to-orange-400', corner: 'nathaniel' },
+  { id: 'fnf-sunday', name: 'FNF vs Sunday Remastered', icon: '☀️', url: `${FNF_BASE}/friday-night-funkin-vs-sunday-remastered-hd/index.html`, description: 'Sunday HD remaster!', color: 'from-orange-400 to-yellow-500', corner: 'nathaniel' },
+  { id: 'fnf-tabi', name: 'FNF vs Tabi', icon: '💀', url: `${FNF_BASE}/friday-night-funkin-vs-tabi/index.html`, description: 'Ex-boyfriend revenge!', color: 'from-gray-700 to-gray-900', corner: 'nathaniel' },
+  { id: 'fnf-zardy', name: 'FNF vs Zardy', icon: '🌽', url: `${FNF_BASE}/friday-night-funkin-vs-zardy/index.html`, description: 'Scarecrow showdown!', color: 'from-amber-700 to-green-900', corner: 'nathaniel' },
+  { id: 'fnf-dave', name: 'FNF vs Dave & Bambi V3', icon: '🌾', url: `${FNF_BASE}/friday-night-funkin-vs-dave-and-bambi-v3/index.html`, description: 'Dave & Bambi chaos!', color: 'from-green-500 to-lime-600', corner: 'nathaniel' },
+  { id: 'fnf-dsides', name: 'FNF D-Sides', icon: '🔄', url: `${FNF_BASE}/friday-night-funkin-d-sides/index.html`, description: 'Alternate universe remix!', color: 'from-indigo-600 to-purple-700', corner: 'nathaniel' },
+  { id: 'fnf-droproll', name: 'FNF Drop and Roll', icon: '🎲', url: `${FNF_BASE}/friday-night-funkin-drop-and-roll/index.html`, description: 'Drop & roll to the beat!', color: 'from-cyan-500 to-blue-600', corner: 'nathaniel' },
+  { id: 'fnf-suicide', name: 'FNF Sunday Night Suicide', icon: '🐭', url: `${FNF_BASE}/friday-night-funkin-sunday-night-suicide/index.html`, description: 'Creepypasta Mickey!', color: 'from-gray-600 to-gray-900', corner: 'nathaniel' },
+  { id: 'fnf-bsides', name: 'FNF vs Impostor B-Sides', icon: '📮', url: `${FNF_BASE}/friday-night-funkin-vs-impostor-b-sides/index.html`, description: 'B-Side impostor remix!', color: 'from-red-600 to-purple-700', corner: 'nathaniel' },
+  { id: 'fnf-infidelity', name: "FNF Wednesday's Infidelity", icon: '📅', url: `${FNF_BASE}/friday-night-funkin-wednesdays-infidelity/index.html`, description: 'Creepy Wednesday mod!', color: 'from-gray-800 to-red-900', corner: 'nathaniel' },
+  { id: 'fnf-akage', name: 'FNF Akage', icon: '🔥', url: `${FNF_BASE}/friday-night-funkin-akage/index.html`, description: 'Red-hot rhythm battle!', color: 'from-red-500 to-orange-600', corner: 'nathaniel' },
+  { id: 'fnf-chaos', name: 'FNF Chaos Nightmare', icon: '🌀', url: `${FNF_BASE}/friday-night-funkin-chaos-nightmare/index.html`, description: 'Nightmare fuel!', color: 'from-purple-800 to-gray-950', corner: 'nathaniel' },
+  { id: 'fnf-gumballs', name: 'FNF Gumballs', icon: '🔵', url: `${FNF_BASE}/friday-night-funkin-gumballs/index.html`, description: 'Gumball machine madness!', color: 'from-blue-400 to-pink-500', corner: 'nathaniel' },
+  { id: 'fnf-heartbreak', name: 'FNF Heartbreak Havoc', icon: '💔', url: `${FNF_BASE}/friday-night-funkin-heartbreak-havoc/index.html`, description: 'Heartbreak rap battle!', color: 'from-rose-500 to-red-700', corner: 'nathaniel' },
+  { id: 'fnf-rev', name: 'FNF Rev Mixed', icon: '🔀', url: `${FNF_BASE}/friday-night-funkin-rev-mixed/index.html`, description: 'Remixed and revved up!', color: 'from-teal-500 to-cyan-600', corner: 'nathaniel' },
+  { id: 'fnf-impostor-alt', name: 'FNF vs Impostor Alternated', icon: '📮', url: `${FNF_BASE}/friday-night-funkin-vs-impostor-alternated/index.html`, description: 'Alternate impostor mod!', color: 'from-red-700 to-gray-800', corner: 'nathaniel' },
+  { id: 'fnf-rewrite', name: 'VS Rewrite Round 2', icon: '✏️', url: `${FNF_BASE}/vs-rewrite-round-2/index.html`, description: 'Rewritten and remixed!', color: 'from-violet-500 to-indigo-700', corner: 'nathaniel' },
 ];
 
 interface AnythingButWorkProps {
@@ -123,6 +117,7 @@ export function AnythingButWork({ onBack }: AnythingButWorkProps) {
   const [activeCorner, setActiveCorner] = useState<string | null>(null);
   const [activeItem, setActiveItem] = useState<CornerItem | null>(null);
   const [iframeError, setIframeError] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const handleItemClick = (item: CornerItem) => {
     if (item.openInNewTab) {
@@ -157,10 +152,16 @@ export function AnythingButWork({ onBack }: AnythingButWorkProps) {
             </div>
           </div>
         ) : (
-          <iframe src={activeItem.url} className="flex-1 w-full border-0"
-            allow="fullscreen; autoplay; gamepad; accelerometer; gyroscope; microphone; camera"
+          <iframe
+            src={activeItem.url}
+            className="flex-1 w-full"
+            style={{ border: 'none', width: '100%', height: '100%' }}
+            allow="autoplay; keyboard-focus; fullscreen"
             sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-modals allow-popups-to-escape-sandbox"
-            referrerPolicy="no-referrer" onError={() => setIframeError(true)} title={activeItem.name} />
+            referrerPolicy="no-referrer"
+            onError={() => setIframeError(true)}
+            title={activeItem.name}
+          />
         )}
       </div>
     );
@@ -169,12 +170,16 @@ export function AnythingButWork({ onBack }: AnythingButWorkProps) {
   const itemsForCorner = activeCorner ? cornerItems.filter(i => i.corner === activeCorner) : [];
   const currentCorner = corners.find(c => c.id === activeCorner);
 
+  const filteredItems = searchQuery
+    ? itemsForCorner.filter(i => i.name.toLowerCase().includes(searchQuery.toLowerCase()))
+    : itemsForCorner;
+
   return (
     <div className="min-h-screen bg-gray-950 text-white">
       <header className="bg-gray-900 border-b border-gray-800 sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <button onClick={activeCorner ? () => setActiveCorner(null) : onBack}
+            <button onClick={activeCorner ? () => { setActiveCorner(null); setSearchQuery(''); } : onBack}
               className="px-3 py-1.5 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm font-medium">← Back</button>
             <div>
               <h1 className="text-base font-bold">🚫📚 The Anything But Work</h1>
@@ -207,27 +212,41 @@ export function AnythingButWork({ onBack }: AnythingButWorkProps) {
               <h2 className="text-2xl font-bold flex items-center gap-2">
                 <span className="text-3xl">{currentCorner?.emoji}</span> {currentCorner?.name}
               </h2>
-              <p className="text-gray-500 text-sm">{currentCorner?.description}</p>
+              <p className="text-gray-500 text-sm mb-4">{currentCorner?.description}</p>
+              <input
+                type="text"
+                placeholder="🔍 Search mods..."
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                className="w-full max-w-md px-4 py-2 bg-gray-900 border border-gray-700 rounded-xl text-white text-sm placeholder-gray-500 focus:outline-none focus:border-purple-500 transition-colors"
+              />
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2.5">
-              {itemsForCorner.map(item => (
-                <div key={item.id} onClick={() => handleItemClick(item)}
-                  className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden hover:border-gray-600 hover:shadow-lg transition-all group cursor-pointer">
-                  <div className={`h-20 bg-gradient-to-br ${item.color} flex items-center justify-center relative`}>
-                    <span className="text-3xl group-hover:scale-110 transition-transform drop-shadow-lg">{item.icon}</span>
-                    {item.openInNewTab && (
-                      <span className="absolute top-1 right-1 bg-black/40 text-white text-[9px] px-1.5 py-0.5 rounded-full font-bold">↗ TAB</span>
-                    )}
-                    <a href={item.url} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}
-                      className="absolute top-1 left-1 w-6 h-6 bg-black/30 rounded-full flex items-center justify-center hover:bg-blue-600/80 transition-colors text-[10px] font-bold text-white">↗</a>
+            {filteredItems.length === 0 ? (
+              <div className="text-center py-16 text-gray-500">
+                <div className="text-4xl mb-2">🔍</div>
+                <p>No results for "{searchQuery}"</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2.5">
+                {filteredItems.map(item => (
+                  <div key={item.id} onClick={() => handleItemClick(item)}
+                    className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden hover:border-gray-600 hover:shadow-lg transition-all group cursor-pointer">
+                    <div className={`h-20 bg-gradient-to-br ${item.color} flex items-center justify-center relative`}>
+                      <span className="text-3xl group-hover:scale-110 transition-transform drop-shadow-lg">{item.icon}</span>
+                      {item.openInNewTab && (
+                        <span className="absolute top-1 right-1 bg-black/40 text-white text-[9px] px-1.5 py-0.5 rounded-full font-bold">↗ TAB</span>
+                      )}
+                      <a href={item.url} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}
+                        className="absolute top-1 left-1 w-6 h-6 bg-black/30 rounded-full flex items-center justify-center hover:bg-blue-600/80 transition-colors text-[10px] font-bold text-white">↗</a>
+                    </div>
+                    <div className="p-2">
+                      <h3 className="font-bold text-white text-xs mb-0.5 leading-tight line-clamp-1">{item.name}</h3>
+                      <p className="text-[10px] text-gray-500 leading-tight line-clamp-2">{item.description}</p>
+                    </div>
                   </div>
-                  <div className="p-2">
-                    <h3 className="font-bold text-white text-xs mb-0.5 leading-tight line-clamp-1">{item.name}</h3>
-                    <p className="text-[10px] text-gray-500 leading-tight line-clamp-2">{item.description}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </>
         )}
       </div>
