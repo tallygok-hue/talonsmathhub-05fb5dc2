@@ -119,8 +119,13 @@ export function AnythingButWork({ onBack }: AnythingButWorkProps) {
   const [activeItem, setActiveItem] = useState<CornerItem | null>(null);
   const [iframeError, setIframeError] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [showAIChat, setShowAIChat] = useState(false);
 
   const handleItemClick = (item: CornerItem) => {
+    if (item.id === 'ai-chat') {
+      setShowAIChat(true);
+      return;
+    }
     if (item.openInNewTab) {
       window.open(item.url, '_blank', 'noopener,noreferrer');
     } else {
@@ -128,6 +133,10 @@ export function AnythingButWork({ onBack }: AnythingButWorkProps) {
       setIframeError(false);
     }
   };
+
+  if (showAIChat) {
+    return <AIChatInterface onBack={() => setShowAIChat(false)} />;
+  }
 
   if (activeItem) {
     return (
