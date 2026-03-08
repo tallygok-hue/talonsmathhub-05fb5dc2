@@ -185,7 +185,19 @@ export function GamePortal({ username, isAdmin, onLogout, onAdminPanel }: GamePo
     return () => { supabase.removeChannel(channel); };
   }, []);
 
-  useEffect(() => { setIframeError(false); setNewTabMode(false); }, [activeGame]);
+  useEffect(() => {
+    setIframeError(false);
+    setNewTabMode(false);
+    setIframeLoading(true);
+    setRetryCount(0);
+    if (iframeTimeoutRef.current) clearTimeout(iframeTimeoutRef.current);
+    if (activeGame) {
+      iframeTimeoutRef.current = setTimeout(() => {
+        setIframeLoading(false);
+      }, 15000);
+    }
+    return () => { if (iframeTimeoutRef.current) clearTimeout(iframeTimeoutRef.current); };
+  }, [activeGame, retryCount]);
 
   const toggleFav = useCallback(async (id: string) => {
     // Optimistic update
