@@ -167,6 +167,45 @@ export type Database = {
         }
         Relationships: []
       }
+      user_requests: {
+        Row: {
+          admin_response: string | null
+          category: string
+          code_id: string
+          created_at: string
+          id: string
+          message: string
+          notified: boolean
+          responded_at: string | null
+          status: string
+          username: string
+        }
+        Insert: {
+          admin_response?: string | null
+          category?: string
+          code_id: string
+          created_at?: string
+          id?: string
+          message: string
+          notified?: boolean
+          responded_at?: string | null
+          status?: string
+          username: string
+        }
+        Update: {
+          admin_response?: string | null
+          category?: string
+          code_id?: string
+          created_at?: string
+          id?: string
+          message?: string
+          notified?: boolean
+          responded_at?: string | null
+          status?: string
+          username?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
