@@ -226,6 +226,53 @@ export function GamePortal({ username, isAdmin, onLogout, onAdminPanel }: GamePo
     return <AnythingButWork onBack={() => setShowABW(false)} />;
   }
 
+  // Default landing: full-screen Lumin Games Hub (700+ games)
+  if (showLuminHub && !activeGame) {
+    return (
+      <div className="min-h-screen bg-gray-950 text-white flex flex-col">
+        <header className="bg-gray-900 border-b border-gray-800 sticky top-0 z-40">
+          <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-pink-600 rounded-xl flex items-center justify-center text-lg shrink-0">🎮</div>
+              <div className="min-w-0">
+                <h1 className="text-base font-bold">🎮 Games Hub</h1>
+                <p className="text-xs text-gray-500 truncate">{username} · 700+ games · ☁️ Cloud synced</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
+              <button onClick={() => setShowLuminHub(false)} className="px-3 py-2 bg-gray-800 text-gray-300 rounded-lg text-xs font-medium hover:bg-gray-700 transition-colors border border-gray-700">📚 Curated</button>
+              <button onClick={() => setShowABW(true)} className="px-3 py-2 bg-purple-600/20 text-purple-400 rounded-lg text-xs font-medium hover:bg-purple-600/30 transition-colors border border-purple-600/30">🚫 ABW</button>
+              {isAdmin && (
+                <button onClick={onAdminPanel} className="px-3 py-2 bg-yellow-600/20 text-yellow-400 rounded-lg text-xs font-medium hover:bg-yellow-600/30 transition-colors border border-yellow-600/30">⚙️ Admin</button>
+              )}
+              <button onClick={onLogout} className="px-3 py-2 bg-red-900/30 text-red-400 rounded-lg text-xs font-medium hover:bg-red-900/50 transition-colors border border-red-800/30" title="Exit">🚨 Exit</button>
+            </div>
+          </div>
+        </header>
+        <div className="flex-1 relative">
+          {luminLoading && (
+            <div className="absolute inset-0 bg-gray-950 flex items-center justify-center z-10">
+              <div className="text-center">
+                <div className="w-12 h-12 border-4 border-pink-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+                <p className="text-gray-400 text-sm">Loading 700+ games…</p>
+              </div>
+            </div>
+          )}
+          <iframe
+            src="/games/lumin.html"
+            title="Games Hub"
+            className="w-full h-full absolute inset-0"
+            style={{ border: 'none', minHeight: 'calc(100vh - 64px)' }}
+            allow="autoplay; fullscreen; gamepad; keyboard-focus"
+            sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-modals allow-popups-to-escape-sandbox allow-downloads"
+            referrerPolicy="no-referrer"
+            onLoad={() => setLuminLoading(false)}
+          />
+        </div>
+        <FeedbackWidget />
+      </div>
+    );
+  }
   if (activeGame) {
     return (
       <div className="fixed inset-0 bg-black z-50 flex flex-col">
