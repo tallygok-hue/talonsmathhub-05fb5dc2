@@ -218,6 +218,7 @@ export function AdminPanel({ onBack, onLogout }: AdminPanelProps) {
             <button key={tab.id} onClick={() => setActiveTab(tab.id)}
               className={`px-3 py-2.5 text-xs font-medium whitespace-nowrap border-b-2 transition-all flex items-center gap-1 shrink-0 ${activeTab === tab.id ? 'border-yellow-400 text-yellow-400 bg-yellow-400/5' : 'border-transparent text-gray-500 hover:text-gray-300 hover:bg-gray-800/30'}`}>
               <span>{tab.icon}</span><span>{tab.label}</span>
+              {tab.badge ? <span className="ml-1 bg-pink-500 text-white text-[9px] font-black rounded-full px-1.5 py-0.5 min-w-[16px] text-center">{tab.badge}</span> : null}
             </button>
           ))}
         </div>
