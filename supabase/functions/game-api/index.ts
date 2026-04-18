@@ -308,6 +308,129 @@ Deno.serve(async (req) => {
       return json({ success: true })
     }
 
+    // === USER: SUBMIT REQUEST/FEEDBACK ===
+    if (action === 'submitRequest') {
+      const body = await req.json()
+      const { token, category, message } = body
+      if (!token || !message) return json({ error: 'Missing fields' }, 400)
+      if (typeof message !== 'string' || message.trim().length === 0 || message.length > 2000) {
+        return json({ error: 'Message must be 1-2000 characters' }, 400)
+      }
+      const cat = ['request', 'complaint', 'comment'].includes(category) ? category : 'request'
+
+      const { data: session } = await supabase
+        .from('active_sessions')
+        .select('code_id, username')
+        .eq('session_token', token)
+        .single()
+      if (!session) return json({ error: 'Unauthorized' }, 403)
+
+      const { data, error } = await supabase
+        .from('user_requests')
+        .insert({
+          code_id: session.code_id,
+          username: session.username,
+          category: cat,
+          message: message.trim(),
+        })
+        .select()
+        .single()
+      if (error) return json({ error: error.message }, 400)
+      return json({ success: true, request: data })
+    }
+
+    // === USER: LIST MY REQUESTS ===
+    if (action === 'getMyRequests') {
+      const token = url.searchParams.get('token')
+      if (!token) return json({ error: 'Missing token' }, 400)
+      const { data: session } = await supabase
+        .from('active_sessions')
+        .select('code_id')
+        .eq('session_token', token)
+        .single()
+      if (!session) return json({ error: 'Unauthorized' }, 403)
+
+      const { data } = await supabase
+        .from('user_requests')
+        .select('*')
+        .eq('code_id', session.code_id)
+        .order('created_at', { ascending: false })
+        .limit(100)
+      return json({ requests: data || [] })
+    }
+
+    // === USER: MARK NOTIFIED (so toast doesn't repeat) ===
+    if (action === 'markNotified') {
+      const body = await req.json()
+      const { token, requestId } = body
+      const { data: session } = await supabase
+        .from('active_sessions')
+        .select('code_id')
+        .eq('session_token', token || '')
+        .single()
+      if (!session) return json({ error: 'Unauthorized' }, 403)
+      await supabase.from('user_requests').update({ notified: true }).eq('id', requestId).eq('code_id', session.code_id)
+      return json({ success: true })
+    }
+
+    // === ADMIN: GET ALL REQUESTS ===
+    if (action === 'getAllRequests') {
+      const token = url.searchParams.get('token')
+      const { data: session } = await supabase
+        .from('active_sessions')
+        .select('is_admin')
+        .eq('session_token', token || '')
+        .single()
+      if (!session?.is_admin) return json({ error: 'Unauthorized' }, 403)
+
+      const { data } = await supabase
+        .from('user_requests')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(500)
+      return json({ requests: data || [] })
+    }
+
+    // === ADMIN: RESPOND TO REQUEST ===
+    if (action === 'respondRequest') {
+      const body = await req.json()
+      const { token, requestId, status, response } = body
+      if (!['accepted', 'denied', 'pending'].includes(status)) {
+        return json({ error: 'Invalid status' }, 400)
+      }
+      const { data: session } = await supabase
+        .from('active_sessions')
+        .select('is_admin')
+        .eq('session_token', token || '')
+        .single()
+      if (!session?.is_admin) return json({ error: 'Unauthorized' }, 403)
+
+      await supabase
+        .from('user_requests')
+        .update({
+          status,
+          admin_response: response || null,
+          responded_at: new Date().toISOString(),
+          notified: false,
+        })
+        .eq('id', requestId)
+      return json({ success: true })
+    }
+
+    // === ADMIN: DELETE REQUEST ===
+    if (action === 'deleteRequest') {
+      const body = await req.json()
+      const { token, requestId } = body
+      const { data: session } = await supabase
+        .from('active_sessions')
+        .select('is_admin')
+        .eq('session_token', token || '')
+        .single()
+      if (!session?.is_admin) return json({ error: 'Unauthorized' }, 403)
+      await supabase.from('user_requests').delete().eq('id', requestId)
+      return json({ success: true })
+    }
+
     return json({ error: 'Unknown action' }, 400)
   } catch (err) {
     return json({ error: String(err) }, 500)

@@ -117,3 +117,35 @@ export async function apiChangeAdminCode(oldCodeId: string, newCode: string) {
   const token = getSessionToken();
   return call('changeAdminCode', 'POST', { token, oldCodeId, newCode });
 }
+
+// User Requests / Feedback
+export async function apiSubmitRequest(category: string, message: string) {
+  const token = getSessionToken();
+  return call('submitRequest', 'POST', { token, category, message });
+}
+
+export async function apiGetMyRequests() {
+  const token = getSessionToken();
+  return call('getMyRequests', 'GET', undefined, { token: token || '' });
+}
+
+export async function apiMarkNotified(requestId: string) {
+  const token = getSessionToken();
+  return call('markNotified', 'POST', { token, requestId });
+}
+
+// Admin: requests moderation
+export async function apiGetAllRequests() {
+  const token = getSessionToken();
+  return call('getAllRequests', 'GET', undefined, { token: token || '' });
+}
+
+export async function apiRespondRequest(requestId: string, status: 'accepted' | 'denied' | 'pending', response: string) {
+  const token = getSessionToken();
+  return call('respondRequest', 'POST', { token, requestId, status, response });
+}
+
+export async function apiDeleteRequest(requestId: string) {
+  const token = getSessionToken();
+  return call('deleteRequest', 'POST', { token, requestId });
+}
