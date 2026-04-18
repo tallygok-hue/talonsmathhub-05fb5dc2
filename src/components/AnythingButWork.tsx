@@ -21,18 +21,27 @@ interface CornerItem {
   thumbnail?: string;
 }
 
-// Helper to create gn-math game URL via our loader
-const gn = (id: number | string) => `/games/loader.html?id=${id}`;
-// Cover image from gn-math CDN
-const cover = (id: number | string, ext = 'png') => `https://cdn.jsdelivr.net/gh/gn-math/covers@main/${id}.${ext}`;
+// Lumin Games Hub — embedded widget hosting 700+ games
+const LUMIN_HUB_URL = '/games/lumin.html';
 
 const corners: Corner[] = [
   { id: 'bentley', name: "Bentley's Corner", emoji: '🤖', color: 'from-cyan-500 to-blue-600', description: 'All the latest AI tools & playgrounds' },
-  { id: 'games', name: "Games Hub", emoji: '🎮', color: 'from-orange-500 to-red-600', description: '700+ games from gn-math — shooters, horror, platformers & more' },
+  { id: 'games', name: "Games Hub", emoji: '🎮', color: 'from-orange-500 to-red-600', description: '700+ games — opens the full Lumin library' },
   { id: 'micah', name: "Micah's Corner", emoji: '🧩', color: 'from-emerald-500 to-teal-600', description: 'Platformers, puzzles, chess & brain games' },
   { id: 'jayson', name: "Jayson's Corner", emoji: '💀', color: 'from-red-600 to-gray-900', description: 'Horror, survival & brutally hard games' },
   { id: 'nathaniel', name: "Nathaniel's Corner", emoji: '🎤', color: 'from-pink-500 to-purple-600', description: 'Every Friday Night Funkin\' mod imaginable' },
 ];
+
+// Special pseudo-item that opens the Lumin Games Hub iframe
+const LUMIN_HUB_ITEM: CornerItem = {
+  id: 'lumin-hub',
+  name: 'Games Hub (700+ Games)',
+  icon: '🎮',
+  url: LUMIN_HUB_URL,
+  description: 'Browse the full Lumin library — shooters, horror, platformers & more',
+  color: 'from-orange-500 to-red-600',
+  corner: 'games',
+};
 
 const cornerItems: CornerItem[] = [
   // BENTLEY'S CORNER — AI
@@ -55,152 +64,11 @@ const cornerItems: CornerItem[] = [
   { id: 'notion-ai', name: 'Notion AI', icon: '📝', url: 'https://www.notion.so/', description: 'AI-powered workspace', color: 'from-gray-600 to-gray-800', corner: 'bentley', openInNewTab: true },
 
   // ══════════════════════════════════════════════════
-  // GAMES HUB — Popular games from gn-math.dev (700+)
+  // GAMES HUB — Now powered by the Lumin widget (700+ games)
+  // The Games Hub corner opens /games/lumin.html directly.
+  // No per-game entries needed here anymore.
   // ══════════════════════════════════════════════════
-
-  // --- Featured / AAA ---
-  { id: 'gn-cuphead', name: 'Cuphead', icon: '☕', url: gn(465), description: 'Run & gun boss battles!', color: 'from-red-500 to-yellow-600', corner: 'games', thumbnail: cover(465) },
-  { id: 'gn-hollow-knight', name: 'Hollow Knight', icon: '🪲', url: gn(468), description: 'Metroidvania masterpiece!', color: 'from-indigo-800 to-gray-900', corner: 'games', thumbnail: cover(468) },
-  { id: 'gn-celeste', name: 'Celeste', icon: '⛰️', url: gn(623), description: 'Climb the mountain!', color: 'from-blue-400 to-pink-500', corner: 'games', thumbnail: cover(623) },
-  { id: 'gn-pizza-tower', name: 'Pizza Tower', icon: '🍕', url: gn(267), description: 'Wario-inspired chaos!', color: 'from-yellow-500 to-red-600', corner: 'games', thumbnail: cover(267) },
-  { id: 'gn-terraria', name: 'Terraria', icon: '⛏️', url: gn(669), description: '2D sandbox adventure!', color: 'from-green-600 to-brown-700', corner: 'games', thumbnail: cover(669) },
-  { id: 'gn-minecraft', name: 'Minecraft 1.12.2', icon: '🧱', url: gn(182), description: 'Full Minecraft in browser!', color: 'from-green-700 to-emerald-800', corner: 'games', thumbnail: cover(182) },
-  { id: 'gn-ultrakill', name: 'ULTRAKILL', icon: '🔫', url: gn(196), description: 'Blood-fueled FPS!', color: 'from-red-700 to-red-900', corner: 'games', thumbnail: cover(196) },
-  { id: 'gn-half-life', name: 'Half Life', icon: '🔬', url: gn(262), description: 'The classic FPS!', color: 'from-orange-600 to-amber-800', corner: 'games', thumbnail: cover(262) },
-  { id: 'gn-doom', name: 'DOOM', icon: '👹', url: gn(203), description: 'Rip and tear!', color: 'from-red-800 to-gray-900', corner: 'games', thumbnail: cover(203) },
-  { id: 'gn-doom2', name: 'Doom 2', icon: '👹', url: gn(602), description: 'Hell on Earth!', color: 'from-red-700 to-red-900', corner: 'games', thumbnail: cover(602) },
-  { id: 'gn-doom3', name: 'Doom 3', icon: '👹', url: gn(626), description: 'Mars horror!', color: 'from-gray-800 to-red-900', corner: 'games', thumbnail: cover(626) },
-  { id: 'gn-karlson', name: 'Karlson', icon: '🥛', url: gn(542), description: 'Dani\'s FPS parkour!', color: 'from-blue-500 to-cyan-600', corner: 'games', thumbnail: cover(542) },
-  { id: 'gn-people-pg', name: 'People Playground', icon: '🧪', url: gn('194-m'), description: 'Physics sandbox!', color: 'from-gray-600 to-gray-800', corner: 'games', thumbnail: cover('194-m') },
-  { id: 'gn-slime-rancher', name: 'Slime Rancher', icon: '🟢', url: gn(591), description: 'Farm cute slimes!', color: 'from-pink-400 to-blue-500', corner: 'games', thumbnail: cover(591) },
-  { id: 'gn-webfishing', name: 'WebFishing', icon: '🎣', url: gn(423), description: 'Multiplayer fishing!', color: 'from-blue-400 to-teal-500', corner: 'games', thumbnail: cover(423) },
-  { id: 'gn-stick-war', name: 'Stick War: Legacy', icon: '⚔️', url: gn(666), description: 'Stick figure strategy!', color: 'from-gray-700 to-gray-900', corner: 'games', thumbnail: cover(666) },
-  { id: 'gn-repo', name: 'R.E.P.O', icon: '👻', url: gn(195), description: 'Co-op horror extraction!', color: 'from-green-800 to-gray-900', corner: 'games', thumbnail: cover(195) },
-
-  // --- Horror ---
-  { id: 'gn-bendy', name: 'Bendy & the Ink Machine', icon: '🖋️', url: gn(215), description: 'Cartoon horror!', color: 'from-yellow-600 to-gray-900', corner: 'games', thumbnail: cover(215) },
-  { id: 'gn-fnaf-pizza', name: 'FNAF: Pizza Simulator', icon: '🍕', url: gn(191), description: 'Freddy Fazbear\'s Pizzeria!', color: 'from-red-800 to-gray-900', corner: 'games', thumbnail: cover(191) },
-  { id: 'gn-fnaf-sl', name: 'FNAF: Sister Location', icon: '🤡', url: gn(185), description: 'Circus Baby\'s horror!', color: 'from-purple-800 to-gray-900', corner: 'games', thumbnail: cover(185) },
-  { id: 'gn-iron-lung', name: 'Iron Lung', icon: '🫁', url: gn(705), description: 'Submarine horror!', color: 'from-red-900 to-gray-950', corner: 'games', thumbnail: cover(705) },
-  { id: 'gn-tattletail', name: 'Tattletail', icon: '🧸', url: gn(607), description: 'Creepy toy horror!', color: 'from-purple-700 to-gray-900', corner: 'games', thumbnail: cover(607) },
-  { id: 'gn-bad-parenting', name: 'Bad Parenting 1', icon: '🏚️', url: gn(166), description: 'Psychological horror!', color: 'from-gray-800 to-gray-950', corner: 'games', thumbnail: cover(166) },
-  { id: 'gn-buckshot', name: 'Buckshot Roulette', icon: '🔫', url: gn(205), description: 'Russian roulette horror!', color: 'from-amber-800 to-gray-900', corner: 'games', thumbnail: cover(205) },
-  { id: 'gn-not-neighbor', name: "That's Not My Neighbor", icon: '🚪', url: gn(216), description: 'Doppelganger detection!', color: 'from-green-800 to-gray-900', corner: 'games', thumbnail: cover(216) },
-  { id: 'gn-kindergarten', name: 'Kindergarten', icon: '🎒', url: gn(445), description: 'Dark school sim!', color: 'from-yellow-500 to-red-600', corner: 'games', thumbnail: cover(445) },
-  { id: 'gn-omori', name: 'OMORI', icon: '🖤', url: gn(427), description: 'Surreal horror RPG!', color: 'from-white to-gray-300', corner: 'games', thumbnail: cover(427) },
-  { id: 'gn-yume-nikki', name: 'Yume Nikki', icon: '💤', url: gn(433), description: 'Surreal dream exploration!', color: 'from-purple-900 to-indigo-950', corner: 'games', thumbnail: cover(433) },
-  { id: 'gn-amanda', name: 'Amanda the Adventurer', icon: '📺', url: gn(450), description: 'Creepy VHS tapes!', color: 'from-orange-600 to-red-800', corner: 'games', thumbnail: cover(450) },
-  { id: 'gn-dead-plate', name: 'DEAD PLATE', icon: '🍽️', url: gn(462), description: 'Cooking horror!', color: 'from-red-700 to-gray-900', corner: 'games', thumbnail: cover(462) },
-  { id: 'gn-backrooms', name: 'Backrooms', icon: '🚪', url: gn(64), description: 'Liminal space horror!', color: 'from-yellow-700 to-yellow-900', corner: 'games', thumbnail: cover(64) },
-  { id: 'gn-andys-apple', name: "Andy's Apple Farm", icon: '🍎', url: gn(426), description: 'Cute but creepy!', color: 'from-red-500 to-green-600', corner: 'games', thumbnail: cover(426) },
-  { id: 'gn-bite-freddy', name: "A Bite at Freddy's", icon: '🐻', url: gn(258), description: 'FNAF fangame!', color: 'from-purple-800 to-gray-900', corner: 'games', thumbnail: cover(258) },
-  { id: 'gn-arthurs-nightmare', name: "Arthur's Nightmare", icon: '👓', url: gn(645), description: 'Arthur horror game!', color: 'from-yellow-600 to-red-800', corner: 'games', thumbnail: cover(645) },
-
-  // --- Action / Shooters ---
-  { id: 'gn-1v1lol', name: '1v1.LoL', icon: '🔫', url: gn(58), description: 'Build & shoot!', color: 'from-blue-600 to-purple-700', corner: 'games', thumbnail: cover(58) },
-  { id: 'gn-cluster-rush', name: 'Cluster Rush', icon: '🚛', url: gn(81), description: 'Jump on trucks!', color: 'from-orange-500 to-red-600', corner: 'games', thumbnail: cover(81) },
-  { id: 'gn-blockpost', name: 'BlockPost', icon: '🔫', url: gn(273), description: 'Block-based FPS!', color: 'from-green-600 to-blue-700', corner: 'games', thumbnail: cover(273) },
-  { id: 'gn-buildnow', name: 'BuildNow.gg', icon: '🏗️', url: gn(581), description: 'Fortnite-style builder!', color: 'from-blue-500 to-purple-600', corner: 'games', thumbnail: cover(581) },
-  { id: 'gn-death-run', name: 'Death Run 3D', icon: '💀', url: gn(211), description: 'Dodge obstacles!', color: 'from-red-600 to-gray-800', corner: 'games', thumbnail: cover(211) },
-  { id: 'gn-alien-hominid', name: 'Alien Hominid', icon: '👽', url: gn(304), description: 'Classic Newgrounds shooter!', color: 'from-yellow-400 to-green-500', corner: 'games', thumbnail: cover(304) },
-  { id: 'gn-bacon', name: 'Bacon May Die', icon: '🥓', url: gn(268), description: 'Beat em up action!', color: 'from-red-500 to-pink-600', corner: 'games', thumbnail: cover(268) },
-
-  // --- Platformers ---
-  { id: 'gn-big-tower', name: 'Big Tower Tiny Square', icon: '🏗️', url: gn(67), description: 'Climb the tower!', color: 'from-blue-500 to-indigo-600', corner: 'games', thumbnail: cover(67) },
-  { id: 'gn-big-tower2', name: 'Big Tower Tiny Square 2', icon: '🏗️', url: gn(170), description: 'Even bigger!', color: 'from-purple-500 to-indigo-600', corner: 'games', thumbnail: cover(170) },
-  { id: 'gn-big-neon', name: 'Big NEON Tower', icon: '💜', url: gn(68), description: 'Neon tower climb!', color: 'from-purple-500 to-pink-600', corner: 'games', thumbnail: cover(68) },
-  { id: 'gn-big-ice', name: 'Big ICE Tower', icon: '🧊', url: gn(69), description: 'Icy tower climb!', color: 'from-cyan-400 to-blue-600', corner: 'games', thumbnail: cover(69) },
-  { id: 'gn-dreadhead', name: 'Dreadhead Parkour', icon: '🏃', url: gn(310), description: 'Parkour action!', color: 'from-orange-500 to-red-600', corner: 'games', thumbnail: cover(310) },
-  { id: 'gn-cave-story', name: 'Cave Story', icon: '🦇', url: gn(632), description: 'Classic indie platformer!', color: 'from-blue-700 to-gray-800', corner: 'games', thumbnail: cover(632) },
-  { id: 'gn-celeste-pico', name: 'Celeste PICO', icon: '⛰️', url: gn(440), description: 'PICO-8 version!', color: 'from-blue-300 to-pink-400', corner: 'games', thumbnail: cover(440) },
-  { id: 'gn-dadish', name: 'Dadish', icon: '🟥', url: gn(357), description: 'Radish dad platformer!', color: 'from-red-500 to-red-700', corner: 'games', thumbnail: cover(357) },
-  { id: 'gn-dadish2', name: 'Dadish 2', icon: '🟥', url: gn(355), description: 'More radish adventures!', color: 'from-red-400 to-red-600', corner: 'games', thumbnail: cover(355) },
-  { id: 'gn-dadish3', name: 'Dadish 3', icon: '🟥', url: gn(356), description: 'Radish trilogy!', color: 'from-red-600 to-red-800', corner: 'games', thumbnail: cover(356) },
-  { id: 'gn-dan-the-man', name: 'Dan The Man', icon: '👊', url: gn(520), description: 'Beat em up platformer!', color: 'from-blue-600 to-gray-800', corner: 'games', thumbnail: cover(520) },
-  { id: 'gn-doodle-jump', name: 'Doodle Jump', icon: '📝', url: gn(470), description: 'Jump as high as you can!', color: 'from-lime-400 to-green-500', corner: 'games', thumbnail: cover(470) },
-  { id: 'gn-antonblast', name: 'Antonblast', icon: '💥', url: gn(711), description: 'Smash everything!', color: 'from-red-500 to-orange-600', corner: 'games', thumbnail: cover(711) },
-
-  // --- Puzzle / Casual ---
-  { id: 'gn-2048', name: '2048', icon: '🔢', url: gn(114), description: 'Merge tiles to 2048!', color: 'from-orange-400 to-amber-500', corner: 'games', thumbnail: cover(114) },
-  { id: 'gn-cookie-clicker', name: 'Cookie Clicker', icon: '🍪', url: gn(82), description: 'Click cookies forever!', color: 'from-amber-600 to-amber-800', corner: 'games', thumbnail: cover(82) },
-  { id: 'gn-bitlife', name: 'BitLife', icon: '👶', url: gn(70), description: 'Text-based life sim!', color: 'from-green-500 to-green-700', corner: 'games', thumbnail: cover(70) },
-  { id: 'gn-bloxorz', name: 'Bloxorz', icon: '📦', url: gn(169), description: 'Block rolling puzzle!', color: 'from-blue-600 to-blue-800', corner: 'games', thumbnail: cover(169) },
-  { id: 'gn-crossy-road', name: 'Crossy Road', icon: '🐔', url: gn(24), description: 'Cross the road!', color: 'from-green-400 to-green-600', corner: 'games', thumbnail: cover(24) },
-  { id: 'gn-candy-crush', name: 'Candy Crush', icon: '🍬', url: gn(171), description: 'Match-3 addiction!', color: 'from-purple-500 to-pink-600', corner: 'games', thumbnail: cover(171) },
-  { id: 'gn-cut-rope', name: 'Cut the Rope', icon: '🍬', url: gn(85), description: 'Feed Om Nom!', color: 'from-green-400 to-green-600', corner: 'games', thumbnail: cover(85) },
-  { id: 'gn-cut-rope-tt', name: 'Cut the Rope: Time Travel', icon: '⏰', url: gn(213), description: 'Time-traveling candy!', color: 'from-blue-400 to-green-500', corner: 'games', thumbnail: cover(213) },
-
-  // --- Tower Defense ---
-  { id: 'gn-btd', name: 'Bloons TD', icon: '🎈', url: gn(71), description: 'Pop the bloons!', color: 'from-green-500 to-blue-600', corner: 'games', thumbnail: cover(71) },
-  { id: 'gn-btd2', name: 'Bloons TD 2', icon: '🎈', url: gn(72), description: 'More bloon popping!', color: 'from-green-400 to-blue-500', corner: 'games', thumbnail: cover(72) },
-  { id: 'gn-btd3', name: 'Bloons TD 3', icon: '🎈', url: gn(73), description: 'Even more towers!', color: 'from-green-600 to-blue-700', corner: 'games', thumbnail: cover(73) },
-  { id: 'gn-btd4', name: 'Bloons TD 4', icon: '🎈', url: gn(74), description: 'Advanced strategies!', color: 'from-blue-500 to-purple-600', corner: 'games', thumbnail: cover(74) },
-  { id: 'gn-btd5', name: 'Bloons TD 5', icon: '🎈', url: gn(75), description: 'Ultimate tower defense!', color: 'from-purple-500 to-red-600', corner: 'games', thumbnail: cover(75) },
-
-  // --- Sports / Racing ---
-  { id: 'gn-basket-random', name: 'Basket Random', icon: '🏀', url: gn(66), description: 'Wacky basketball!', color: 'from-orange-500 to-orange-700', corner: 'games', thumbnail: cover(66) },
-  { id: 'gn-basket-bros', name: 'Basket Bros', icon: '🏀', url: gn(285), description: '2-player basketball!', color: 'from-blue-500 to-orange-500', corner: 'games', thumbnail: cover(285) },
-  { id: 'gn-baseball-bros', name: 'Baseball Bros', icon: '⚾', url: gn(547), description: 'Pixel baseball!', color: 'from-red-600 to-blue-700', corner: 'games', thumbnail: cover(547) },
-  { id: 'gn-boxing-random', name: 'Boxing Random', icon: '🥊', url: gn(77), description: 'Random boxing!', color: 'from-red-600 to-red-800', corner: 'games', thumbnail: cover(77) },
-  { id: 'gn-drift-hunters', name: 'Drift Hunters', icon: '🏎️', url: gn(173), description: '3D drift racing!', color: 'from-gray-700 to-gray-900', corner: 'games', thumbnail: cover(173) },
-  { id: 'gn-drift-boss', name: 'Drift Boss', icon: '🚗', url: gn(276), description: 'Drift on the edge!', color: 'from-blue-500 to-blue-700', corner: 'games', thumbnail: cover(276) },
-
-  // --- Classics / Retro ---
-  { id: 'gn-angry-birds', name: 'Angry Birds', icon: '🐦', url: gn(63), description: 'Classic bird flinging!', color: 'from-red-500 to-green-600', corner: 'games', thumbnail: cover(63) },
-  { id: 'gn-angry-birds-chrome', name: 'Angry Birds Chrome', icon: '🐦', url: gn(316), description: 'Chrome edition!', color: 'from-yellow-500 to-red-500', corner: 'games', thumbnail: cover(316) },
-  { id: 'gn-bad-piggies', name: 'Bad Piggies', icon: '🐷', url: gn(752), description: 'Build pig vehicles!', color: 'from-green-500 to-green-700', corner: 'games', thumbnail: cover(752) },
-  { id: 'gn-duck-life', name: 'Duck Life', icon: '🦆', url: gn(234), description: 'Train your duck!', color: 'from-yellow-400 to-yellow-600', corner: 'games', thumbnail: cover(234) },
-  { id: 'gn-duck-life2', name: 'Duck Life 2', icon: '🦆', url: gn(235), description: 'More duck training!', color: 'from-orange-400 to-yellow-600', corner: 'games', thumbnail: cover(235) },
-  { id: 'gn-duck-life3', name: 'Duck Life 3', icon: '🦆', url: gn(236), description: 'Evolution!', color: 'from-green-400 to-yellow-500', corner: 'games', thumbnail: cover(236) },
-  { id: 'gn-duck-life4', name: 'Duck Life 4', icon: '🦆', url: gn(237), description: 'Space adventure!', color: 'from-blue-400 to-purple-500', corner: 'games', thumbnail: cover(237) },
-  { id: 'gn-bob-robber', name: 'Bob The Robber 2', icon: '🥷', url: gn(76), description: 'Stealth robbery!', color: 'from-gray-700 to-gray-900', corner: 'games', thumbnail: cover(76) },
-  { id: 'gn-cubefield', name: 'Cubefield', icon: '🟩', url: gn(84), description: 'Dodge the cubes!', color: 'from-green-500 to-green-700', corner: 'games', thumbnail: cover(84) },
-  { id: 'gn-coreball', name: 'Coreball', icon: '🎯', url: gn(83), description: 'Stick the pins!', color: 'from-blue-500 to-blue-700', corner: 'games', thumbnail: cover(83) },
-  { id: 'gn-achievement1', name: 'Achievement Unlocked', icon: '🏆', url: gn(60), description: 'Meta achievement game!', color: 'from-yellow-500 to-amber-600', corner: 'games', thumbnail: cover(60) },
-  { id: 'gn-achievement2', name: 'Achievement Unlocked 2', icon: '🏆', url: gn(61), description: 'Even more achievements!', color: 'from-amber-500 to-orange-600', corner: 'games', thumbnail: cover(61) },
-  { id: 'gn-achievement3', name: 'Achievement Unlocked 3', icon: '🏆', url: gn(62), description: 'Ultimate achievements!', color: 'from-orange-500 to-red-600', corner: 'games', thumbnail: cover(62) },
-
-  // --- Simulation / Sandbox ---
-  { id: 'gn-city-smash', name: 'City Smash', icon: '🏙️', url: gn(449), description: 'Destroy cities!', color: 'from-orange-600 to-red-700', corner: 'games', thumbnail: cover(449) },
-  { id: 'gn-ages-conflict', name: 'Ages of Conflict', icon: '⚔️', url: gn(444), description: 'Civilization wars!', color: 'from-amber-700 to-red-800', corner: 'games', thumbnail: cover(444) },
-  { id: 'gn-adventure-cap', name: 'Adventure Capitalist', icon: '💰', url: gn(354), description: 'Idle business tycoon!', color: 'from-green-500 to-green-700', corner: 'games', thumbnail: cover(354) },
-  { id: 'gn-doge-miner', name: 'Doge Miner', icon: '🐕', url: gn(511), description: 'Mine dogecoins!', color: 'from-yellow-500 to-amber-600', corner: 'games', thumbnail: cover(511) },
-
-  // --- .io Games ---
-  { id: 'gn-brawl-guys', name: 'Brawl Guys.io', icon: '👊', url: gn(121), description: 'Multiplayer brawler!', color: 'from-purple-500 to-blue-600', corner: 'games', thumbnail: cover(121) },
-
-  // --- RPG / Story ---
-  { id: 'gn-oneshot', name: 'Oneshot (LEGACY)', icon: '💡', url: gn(622), description: 'Meta RPG experience!', color: 'from-yellow-500 to-purple-700', corner: 'games', thumbnail: cover(622) },
-  { id: 'gn-deltatraveler', name: 'Deltatraveler', icon: '🔺', url: gn(560), description: 'Deltarune fangame!', color: 'from-purple-600 to-blue-700', corner: 'games', thumbnail: cover(560) },
-  { id: 'gn-bad-time', name: 'Bad Time Simulator', icon: '💀', url: gn(472), description: 'Fight Sans!', color: 'from-blue-800 to-gray-900', corner: 'games', thumbnail: cover(472) },
-  { id: 'gn-bad-monday', name: 'Bad Monday Simulator', icon: '🐱', url: gn(522), description: 'Garfield horror!', color: 'from-orange-600 to-gray-900', corner: 'games', thumbnail: cover(522) },
-  { id: 'gn-class09', name: "Class of '09", icon: '🎓', url: gn(259), description: 'Visual novel!', color: 'from-pink-500 to-purple-600', corner: 'games', thumbnail: cover(259) },
-  { id: 'gn-endroll', name: 'Endroll', icon: '🎬', url: gn(631), description: 'Dream RPG!', color: 'from-indigo-700 to-purple-900', corner: 'games', thumbnail: cover(631) },
-
-  // --- Misc Popular ---
-  { id: 'gn-binding-isaac', name: 'Binding of Isaac', icon: '😢', url: gn(350), description: 'Roguelike dungeon crawler!', color: 'from-amber-700 to-gray-900', corner: 'games', thumbnail: cover(350) },
-  { id: 'gn-schoolboy', name: 'Schoolboy Runaway', icon: '🏃', url: gn(605), description: 'Escape school!', color: 'from-blue-500 to-blue-700', corner: 'games', thumbnail: cover(605) },
-  { id: 'gn-goose', name: 'Untitled Goose Game', icon: '🦢', url: gn(718), description: 'Honk! Be a goose!', color: 'from-green-400 to-blue-300', corner: 'games', thumbnail: cover(718) },
-  { id: 'gn-clover-pit', name: 'Clover Pit', icon: '🍀', url: gn(716), description: 'Lucky platformer!', color: 'from-green-500 to-emerald-600', corner: 'games', thumbnail: cover(716) },
-  { id: 'gn-brotato', name: 'Brotato', icon: '🥔', url: gn(723), description: 'Roguelite survivors!', color: 'from-amber-600 to-brown-700', corner: 'games', thumbnail: cover(723) },
-  { id: 'gn-elastic-man', name: 'Elastic Man', icon: '🤸', url: gn(197), description: 'Stretch the face!', color: 'from-pink-400 to-pink-600', corner: 'games', thumbnail: cover(197) },
-  { id: 'gn-bad-ice1', name: 'Bad Ice Cream', icon: '🍦', url: gn(269), description: 'Co-op ice cream!', color: 'from-cyan-400 to-blue-500', corner: 'games', thumbnail: cover(269) },
-  { id: 'gn-bad-ice2', name: 'Bad Ice Cream 2', icon: '🍦', url: gn(270), description: 'More icy fun!', color: 'from-pink-400 to-cyan-500', corner: 'games', thumbnail: cover(270) },
-  { id: 'gn-bad-ice3', name: 'Bad Ice Cream 3', icon: '🍦', url: gn(271), description: 'Triple scoop!', color: 'from-green-400 to-blue-500', corner: 'games', thumbnail: cover(271) },
-  { id: 'gn-burrito', name: 'Burrito Bison: Launcha Libre', icon: '🌯', url: gn(78), description: 'Launch and smash!', color: 'from-red-500 to-red-700', corner: 'games', thumbnail: cover(78) },
-  { id: 'gn-draw-climber', name: 'Draw Climber', icon: '✏️', url: gn(86), description: 'Draw legs to climb!', color: 'from-yellow-400 to-orange-500', corner: 'games', thumbnail: cover(86) },
-  { id: 'gn-10min-dawn', name: '10 Minutes Till Dawn', icon: '🌙', url: gn(430), description: 'Survive till dawn!', color: 'from-purple-900 to-gray-950', corner: 'games', thumbnail: cover(430) },
-  { id: 'gn-endoparasitic', name: 'Endoparasitic', icon: '🦠', url: gn(286), description: 'Crawl & survive!', color: 'from-red-800 to-gray-900', corner: 'games', thumbnail: cover(286) },
-  { id: 'gn-endoparasitic2', name: 'Endoparasitic 2', icon: '🦠', url: gn(724), description: 'More parasite horror!', color: 'from-green-800 to-gray-900', corner: 'games', thumbnail: cover(724) },
-  { id: 'gn-cooking-mama', name: 'Cooking Mama', icon: '👩‍🍳', url: gn(681), description: 'Cook delicious meals!', color: 'from-orange-400 to-red-500', corner: 'games', thumbnail: cover(681) },
-  { id: 'gn-cooking-mama2', name: 'Cooking Mama 2', icon: '👩‍🍳', url: gn(682), description: 'More recipes!', color: 'from-pink-400 to-orange-500', corner: 'games', thumbnail: cover(682) },
-  { id: 'gn-cooking-mama3', name: 'Cooking Mama 3', icon: '👩‍🍳', url: gn(683), description: 'Mama returns!', color: 'from-yellow-400 to-red-500', corner: 'games', thumbnail: cover(683) },
-  { id: 'gn-choppy-orc', name: 'Choppy Orc', icon: '🪓', url: gn(464), description: 'Axe-throwing platformer!', color: 'from-green-600 to-green-800', corner: 'games', thumbnail: cover(464) },
-  { id: 'gn-circloo', name: 'CircloO', icon: '⭕', url: gn(274), description: 'Physics puzzle!', color: 'from-blue-400 to-blue-600', corner: 'games', thumbnail: cover(274) },
-  { id: 'gn-circloo2', name: 'CircloO 2', icon: '⭕', url: gn(275), description: 'More circular puzzles!', color: 'from-purple-400 to-blue-600', corner: 'games', thumbnail: cover(275) },
-  { id: 'gn-escape-road', name: 'Escape Road', icon: '🚗', url: gn(264), description: 'Escape the police!', color: 'from-blue-600 to-gray-800', corner: 'games', thumbnail: cover(264) },
-  { id: 'gn-escape-road2', name: 'Escape Road 2', icon: '🚗', url: gn(265), description: 'More car chases!', color: 'from-red-600 to-gray-800', corner: 'games', thumbnail: cover(265) },
-  { id: 'gn-crazy-cattle', name: 'Crazy Cattle 3D', icon: '🐄', url: gn(164), description: 'Crazy cow physics!', color: 'from-green-500 to-brown-600', corner: 'games', thumbnail: cover(164) },
+  LUMIN_HUB_ITEM,
 
   // MICAH'S CORNER — Platformers, Puzzles, Chess
   { id: 'bigtower', name: 'Big Tower Tiny Square', icon: '🏗️', url: 'https://www.coolmathgames.com/0-big-tower-tiny-square', description: 'Climb the massive tower!', color: 'from-blue-500 to-indigo-600', corner: 'micah' },
@@ -396,14 +264,40 @@ export function AnythingButWork({ onBack }: AnythingButWorkProps) {
             <p className="text-gray-500 text-center mb-10 text-sm">Choose your corner</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-4xl mx-auto">
               {corners.map(c => (
-                <button key={c.id} onClick={() => setActiveCorner(c.id)}
+                <button key={c.id} onClick={() => {
+                  if (c.id === 'games') {
+                    handleItemClick(LUMIN_HUB_ITEM);
+                  } else {
+                    setActiveCorner(c.id);
+                  }
+                }}
                   className={`bg-gradient-to-br ${c.color} rounded-2xl p-8 text-left hover:scale-[1.03] hover:shadow-2xl transition-all group`}>
                   <div className="text-5xl mb-4 group-hover:scale-110 transition-transform">{c.emoji}</div>
                   <h3 className="text-2xl font-bold text-white mb-1">{c.name}</h3>
                   <p className="text-white/70 text-sm">{c.description}</p>
-                  <p className="text-white/50 text-xs mt-3">{cornerItems.filter(i => i.corner === c.id).length} items →</p>
+                  <p className="text-white/50 text-xs mt-3">
+                    {c.id === 'games'
+                      ? '700+ games →'
+                      : `${cornerItems.filter(i => i.corner === c.id && i.id !== 'lumin-hub').length} items →`}
+                  </p>
                 </button>
               ))}
+            </div>
+
+            {/* Featured: Games Hub also surfaced on the main landing */}
+            <div className="max-w-4xl mx-auto mt-10">
+              <h3 className="text-lg font-bold mb-3 text-gray-300">⭐ Featured</h3>
+              <button
+                onClick={() => handleItemClick(LUMIN_HUB_ITEM)}
+                className="w-full bg-gradient-to-r from-orange-600 via-red-600 to-pink-600 rounded-2xl p-6 text-left hover:scale-[1.01] hover:shadow-2xl transition-all group flex items-center gap-4"
+              >
+                <div className="text-6xl group-hover:scale-110 transition-transform shrink-0">🎮</div>
+                <div className="flex-1 min-w-0">
+                  <h4 className="text-xl font-bold text-white mb-1">Open the Full Games Hub</h4>
+                  <p className="text-white/80 text-sm">Browse 700+ games in one place — Cuphead, Pizza Tower, Minecraft, FNAF, Bloons TD, and more.</p>
+                </div>
+                <div className="text-white text-2xl shrink-0">→</div>
+              </button>
             </div>
           </>
         ) : (
