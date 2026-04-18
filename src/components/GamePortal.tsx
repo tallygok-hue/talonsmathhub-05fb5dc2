@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { apiToggleFav, apiGetFavs, getCodeId } from '../lib/api';
 import { supabase } from '../integrations/supabase/client';
 import { AnythingButWork } from './AnythingButWork';
+import { FeedbackWidget } from './FeedbackWidget';
 
 interface GamePortalProps {
   username: string;
@@ -155,6 +156,9 @@ export function GamePortal({ username, isAdmin, onLogout, onAdminPanel }: GamePo
   const iframeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [favorites, setFavorites] = useState<string[]>([]);
   const [showABW, setShowABW] = useState(false);
+  // Default landing view = Lumin Games Hub (700+ games)
+  const [showLuminHub, setShowLuminHub] = useState(true);
+  const [luminLoading, setLuminLoading] = useState(true);
 
   // Load favorites from cloud
   useEffect(() => {
