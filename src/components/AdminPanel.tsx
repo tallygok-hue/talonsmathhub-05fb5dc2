@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { apiGetCodes, apiAddCode, apiRemoveCode, apiActivateCode, apiGetSessions, apiEndSession, apiGetLogs, apiChangeAdminCode } from '../lib/api';
+import { apiGetCodes, apiAddCode, apiRemoveCode, apiActivateCode, apiGetSessions, apiEndSession, apiGetLogs, apiChangeAdminCode, apiGetAllRequests, apiRespondRequest, apiDeleteRequest } from '../lib/api';
+import { supabase } from '../integrations/supabase/client';
 
 interface AdminPanelProps {
   onBack: () => void;
@@ -33,7 +34,19 @@ interface LogEntry {
   created_at: string;
 }
 
-type TabId = 'dashboard' | 'sessions' | 'logs' | 'codes';
+interface RequestEntry {
+  id: string;
+  code_id: string;
+  username: string;
+  category: string;
+  message: string;
+  status: 'pending' | 'accepted' | 'denied';
+  admin_response: string | null;
+  created_at: string;
+  responded_at: string | null;
+}
+
+type TabId = 'dashboard' | 'sessions' | 'logs' | 'codes' | 'requests';
 
 export function AdminPanel({ onBack, onLogout }: AdminPanelProps) {
   const [activeTab, setActiveTab] = useState<TabId>('dashboard');
@@ -48,6 +61,9 @@ export function AdminPanel({ onBack, onLogout }: AdminPanelProps) {
   const [logSearch, setLogSearch] = useState('');
   const [newAdminCode, setNewAdminCode] = useState('');
   const [showAdminInput, setShowAdminInput] = useState(false);
+  const [requests, setRequests] = useState<RequestEntry[]>([]);
+  const [responseDraft, setResponseDraft] = useState<Record<string, string>>({});
+  const [requestFilter, setRequestFilter] = useState<'all' | 'pending' | 'accepted' | 'denied'>('pending');
 
   const fetchCodes = useCallback(async () => {
     const result = await apiGetCodes();
@@ -64,17 +80,50 @@ export function AdminPanel({ onBack, onLogout }: AdminPanelProps) {
     if (result.logs) setLogs(result.logs);
   }, []);
 
+  const fetchRequests = useCallback(async () => {
+    const result = await apiGetAllRequests();
+    if (result.requests) setRequests(result.requests);
+  }, []);
+
   useEffect(() => {
     fetchCodes();
     fetchSessions();
     fetchLogs();
-  }, [fetchCodes, fetchSessions, fetchLogs]);
+    fetchRequests();
+  }, [fetchCodes, fetchSessions, fetchLogs, fetchRequests]);
 
   useEffect(() => {
     if (activeTab === 'sessions') fetchSessions();
     if (activeTab === 'logs') fetchLogs();
     if (activeTab === 'codes') fetchCodes();
-  }, [activeTab, fetchSessions, fetchLogs, fetchCodes]);
+    if (activeTab === 'requests') fetchRequests();
+  }, [activeTab, fetchSessions, fetchLogs, fetchCodes, fetchRequests]);
+
+  // Realtime: refresh requests on any change
+  useEffect(() => {
+    const channel = supabase
+      .channel('admin-requests-watch')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'user_requests' }, () => {
+        fetchRequests();
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [fetchRequests]);
+
+  const respondToRequest = async (id: string, status: 'accepted' | 'denied') => {
+    const response = responseDraft[id] || '';
+    await apiRespondRequest(id, status, response);
+    setResponseDraft(d => ({ ...d, [id]: '' }));
+    setCloudMsg(status === 'accepted' ? '✅ Request accepted — user notified!' : '❌ Request denied — user notified!');
+    fetchRequests();
+    setTimeout(() => setCloudMsg(''), 4000);
+  };
+
+  const deleteRequest = async (id: string) => {
+    if (!window.confirm('Delete this request?')) return;
+    await apiDeleteRequest(id);
+    fetchRequests();
+  };
 
   const addCode = async () => {
     const trimmed = newCode.trim();
@@ -137,11 +186,15 @@ export function AdminPanel({ onBack, onLogout }: AdminPanelProps) {
     return okFilter && okSearch;
   });
 
-  const tabs: { id: TabId; label: string; icon: string }[] = [
+  const pendingRequestCount = requests.filter(r => r.status === 'pending').length;
+  const filteredRequests = requests.filter(r => requestFilter === 'all' || r.status === requestFilter);
+
+  const tabs: { id: TabId; label: string; icon: string; badge?: number }[] = [
     { id: 'dashboard', label: 'Dashboard', icon: '📊' },
     { id: 'sessions', label: 'Sessions', icon: '👥' },
     { id: 'logs', label: 'Logs', icon: '📋' },
     { id: 'codes', label: 'Codes', icon: '🔑' },
+    { id: 'requests', label: 'Requests', icon: '💬', badge: pendingRequestCount },
   ];
 
   return (
@@ -165,6 +218,7 @@ export function AdminPanel({ onBack, onLogout }: AdminPanelProps) {
             <button key={tab.id} onClick={() => setActiveTab(tab.id)}
               className={`px-3 py-2.5 text-xs font-medium whitespace-nowrap border-b-2 transition-all flex items-center gap-1 shrink-0 ${activeTab === tab.id ? 'border-yellow-400 text-yellow-400 bg-yellow-400/5' : 'border-transparent text-gray-500 hover:text-gray-300 hover:bg-gray-800/30'}`}>
               <span>{tab.icon}</span><span>{tab.label}</span>
+              {tab.badge ? <span className="ml-1 bg-pink-500 text-white text-[9px] font-black rounded-full px-1.5 py-0.5 min-w-[16px] text-center">{tab.badge}</span> : null}
             </button>
           ))}
         </div>
@@ -345,6 +399,107 @@ export function AdminPanel({ onBack, onLogout }: AdminPanelProps) {
               <button onClick={changeAdminCode} disabled={newAdminCode.trim().length < 4} className="px-4 py-2.5 bg-yellow-500 text-gray-900 rounded-xl font-bold text-sm hover:bg-yellow-400 disabled:opacity-30">Save</button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* REQUESTS */}
+      {activeTab === 'requests' && (
+        <div className="max-w-6xl mx-auto px-4 py-5 w-full space-y-4">
+          <div className="flex items-center justify-between flex-wrap gap-3">
+            <div>
+              <h2 className="text-lg font-bold">💬 User Requests & Feedback</h2>
+              <p className="text-gray-500 text-xs mt-0.5">Comments, complaints, and requests from logged-in users · {pendingRequestCount} pending</p>
+            </div>
+            <button onClick={fetchRequests} className="px-3 py-2 bg-blue-600/20 text-blue-400 rounded-lg text-xs font-medium hover:bg-blue-600/30 border border-blue-600/30">🔄 Refresh</button>
+          </div>
+          {cloudMsg && <p className={`text-sm font-medium ${cloudMsg.startsWith('✅') ? 'text-green-400' : 'text-red-400'}`}>{cloudMsg}</p>}
+          <div className="flex gap-1.5 flex-wrap">
+            {(['pending', 'accepted', 'denied', 'all'] as const).map(f => (
+              <button key={f} onClick={() => setRequestFilter(f)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold capitalize transition-colors ${
+                  requestFilter === f
+                    ? f === 'pending' ? 'bg-yellow-500 text-yellow-950'
+                    : f === 'accepted' ? 'bg-emerald-500 text-emerald-950'
+                    : f === 'denied' ? 'bg-red-500 text-red-950'
+                    : 'bg-gray-300 text-gray-900'
+                    : 'bg-gray-900 text-gray-400 border border-gray-800 hover:bg-gray-800'
+                }`}
+              >
+                {f} {f === 'pending' && pendingRequestCount > 0 ? `(${pendingRequestCount})` : ''}
+              </button>
+            ))}
+          </div>
+          {filteredRequests.length === 0 ? (
+            <div className="bg-gray-900 rounded-xl border border-gray-800 p-12 text-center">
+              <div className="text-4xl mb-2">📭</div>
+              <p className="text-gray-400 text-sm">No {requestFilter === 'all' ? '' : requestFilter} requests.</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {filteredRequests.map(r => (
+                <div key={r.id} className={`bg-gray-900 rounded-xl border p-4 ${
+                  r.status === 'accepted' ? 'border-emerald-700/40' :
+                  r.status === 'denied' ? 'border-red-700/40' :
+                  'border-yellow-700/40'
+                }`}>
+                  <div className="flex items-start justify-between gap-3 mb-2 flex-wrap">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-bold text-white text-sm">{r.username}</span>
+                      <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded bg-gray-800 text-gray-300">{r.category}</span>
+                      <span className={`text-[10px] font-black uppercase px-1.5 py-0.5 rounded ${
+                        r.status === 'accepted' ? 'bg-emerald-500 text-emerald-950' :
+                        r.status === 'denied' ? 'bg-red-500 text-red-950' :
+                        'bg-yellow-500 text-yellow-950'
+                      }`}>
+                        {r.status}
+                      </span>
+                      <span className="text-[10px] text-gray-600">{new Date(r.created_at).toLocaleString()}</span>
+                    </div>
+                    <button onClick={() => deleteRequest(r.id)} className="text-gray-600 hover:text-red-400 text-xs">🗑️</button>
+                  </div>
+                  <p className="text-sm text-gray-200 whitespace-pre-wrap break-words mb-3 bg-gray-800/40 rounded-lg p-3">{r.message}</p>
+                  {r.admin_response && (
+                    <div className="text-xs text-gray-300 bg-gray-800/60 border-l-2 border-purple-500 rounded px-3 py-2 mb-2">
+                      <span className="font-bold text-purple-300">Your response:</span> {r.admin_response}
+                    </div>
+                  )}
+                  {r.status === 'pending' && (
+                    <div className="space-y-2">
+                      <textarea
+                        value={responseDraft[r.id] || ''}
+                        onChange={e => setResponseDraft(d => ({ ...d, [r.id]: e.target.value }))}
+                        placeholder="Optional response message..."
+                        rows={2}
+                        className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 text-xs focus:outline-none focus:border-purple-500 resize-none"
+                      />
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => respondToRequest(r.id, 'accepted')}
+                          className="flex-1 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold transition-colors"
+                        >
+                          ✓ Accept
+                        </button>
+                        <button
+                          onClick={() => respondToRequest(r.id, 'denied')}
+                          className="flex-1 py-2 bg-red-600 hover:bg-red-500 text-white rounded-lg text-xs font-bold transition-colors"
+                        >
+                          ✗ Deny
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                  {r.status !== 'pending' && (
+                    <button
+                      onClick={() => respondToRequest(r.id, 'accepted')}
+                      className="text-[10px] text-gray-500 hover:text-gray-300"
+                    >
+                      ⟲ Re-open / change status
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>
