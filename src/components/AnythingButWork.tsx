@@ -21,18 +21,27 @@ interface CornerItem {
   thumbnail?: string;
 }
 
-// Helper to create gn-math game URL via our loader
-const gn = (id: number | string) => `/games/loader.html?id=${id}`;
-// Cover image from gn-math CDN
-const cover = (id: number | string, ext = 'png') => `https://cdn.jsdelivr.net/gh/gn-math/covers@main/${id}.${ext}`;
+// Lumin Games Hub — embedded widget hosting 700+ games
+const LUMIN_HUB_URL = '/games/lumin.html';
 
 const corners: Corner[] = [
   { id: 'bentley', name: "Bentley's Corner", emoji: '🤖', color: 'from-cyan-500 to-blue-600', description: 'All the latest AI tools & playgrounds' },
-  { id: 'games', name: "Games Hub", emoji: '🎮', color: 'from-orange-500 to-red-600', description: '700+ games from gn-math — shooters, horror, platformers & more' },
+  { id: 'games', name: "Games Hub", emoji: '🎮', color: 'from-orange-500 to-red-600', description: '700+ games — opens the full Lumin library' },
   { id: 'micah', name: "Micah's Corner", emoji: '🧩', color: 'from-emerald-500 to-teal-600', description: 'Platformers, puzzles, chess & brain games' },
   { id: 'jayson', name: "Jayson's Corner", emoji: '💀', color: 'from-red-600 to-gray-900', description: 'Horror, survival & brutally hard games' },
   { id: 'nathaniel', name: "Nathaniel's Corner", emoji: '🎤', color: 'from-pink-500 to-purple-600', description: 'Every Friday Night Funkin\' mod imaginable' },
 ];
+
+// Special pseudo-item that opens the Lumin Games Hub iframe
+const LUMIN_HUB_ITEM: CornerItem = {
+  id: 'lumin-hub',
+  name: 'Games Hub (700+ Games)',
+  icon: '🎮',
+  url: LUMIN_HUB_URL,
+  description: 'Browse the full Lumin library — shooters, horror, platformers & more',
+  color: 'from-orange-500 to-red-600',
+  corner: 'games',
+};
 
 const cornerItems: CornerItem[] = [
   // BENTLEY'S CORNER — AI
