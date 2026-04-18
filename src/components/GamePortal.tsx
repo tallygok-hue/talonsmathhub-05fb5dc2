@@ -477,12 +477,13 @@ export function GamePortal({ username, isAdmin, onLogout, onAdminPanel }: GamePo
         </div>
       </div>
 
-      <div className="fixed bottom-4 right-4 z-50 flex flex-col items-center gap-1">
+      <div className="fixed bottom-4 left-4 z-30 flex flex-col items-center gap-1">
         <button onClick={onLogout}
           className="w-12 h-12 bg-red-600 text-white rounded-full shadow-lg shadow-red-600/30 hover:bg-red-700 transition-all flex items-center justify-center text-xl hover:scale-110 active:scale-95"
           title="PANIC - Quick exit to math site">🚨</button>
         <span className="text-[9px] text-gray-700">Exit</span>
       </div>
+      <FeedbackWidget />
     </div>
   );
 }
