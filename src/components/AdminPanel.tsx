@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { apiGetCodes, apiAddCode, apiRemoveCode, apiActivateCode, apiGetSessions, apiEndSession, apiGetLogs, apiChangeAdminCode } from '../lib/api';
+import { apiGetCodes, apiAddCode, apiRemoveCode, apiActivateCode, apiGetSessions, apiEndSession, apiGetLogs, apiChangeAdminCode, apiGetAllRequests, apiRespondRequest, apiDeleteRequest } from '../lib/api';
+import { supabase } from '../integrations/supabase/client';
 
 interface AdminPanelProps {
   onBack: () => void;
