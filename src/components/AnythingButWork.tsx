@@ -264,14 +264,40 @@ export function AnythingButWork({ onBack }: AnythingButWorkProps) {
             <p className="text-gray-500 text-center mb-10 text-sm">Choose your corner</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-4xl mx-auto">
               {corners.map(c => (
-                <button key={c.id} onClick={() => setActiveCorner(c.id)}
+                <button key={c.id} onClick={() => {
+                  if (c.id === 'games') {
+                    handleItemClick(LUMIN_HUB_ITEM);
+                  } else {
+                    setActiveCorner(c.id);
+                  }
+                }}
                   className={`bg-gradient-to-br ${c.color} rounded-2xl p-8 text-left hover:scale-[1.03] hover:shadow-2xl transition-all group`}>
                   <div className="text-5xl mb-4 group-hover:scale-110 transition-transform">{c.emoji}</div>
                   <h3 className="text-2xl font-bold text-white mb-1">{c.name}</h3>
                   <p className="text-white/70 text-sm">{c.description}</p>
-                  <p className="text-white/50 text-xs mt-3">{cornerItems.filter(i => i.corner === c.id).length} items →</p>
+                  <p className="text-white/50 text-xs mt-3">
+                    {c.id === 'games'
+                      ? '700+ games →'
+                      : `${cornerItems.filter(i => i.corner === c.id && i.id !== 'lumin-hub').length} items →`}
+                  </p>
                 </button>
               ))}
+            </div>
+
+            {/* Featured: Games Hub also surfaced on the main landing */}
+            <div className="max-w-4xl mx-auto mt-10">
+              <h3 className="text-lg font-bold mb-3 text-gray-300">⭐ Featured</h3>
+              <button
+                onClick={() => handleItemClick(LUMIN_HUB_ITEM)}
+                className="w-full bg-gradient-to-r from-orange-600 via-red-600 to-pink-600 rounded-2xl p-6 text-left hover:scale-[1.01] hover:shadow-2xl transition-all group flex items-center gap-4"
+              >
+                <div className="text-6xl group-hover:scale-110 transition-transform shrink-0">🎮</div>
+                <div className="flex-1 min-w-0">
+                  <h4 className="text-xl font-bold text-white mb-1">Open the Full Games Hub</h4>
+                  <p className="text-white/80 text-sm">Browse 700+ games in one place — Cuphead, Pizza Tower, Minecraft, FNAF, Bloons TD, and more.</p>
+                </div>
+                <div className="text-white text-2xl shrink-0">→</div>
+              </button>
             </div>
           </>
         ) : (
