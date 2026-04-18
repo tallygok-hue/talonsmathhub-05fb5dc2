@@ -80,17 +80,50 @@ export function AdminPanel({ onBack, onLogout }: AdminPanelProps) {
     if (result.logs) setLogs(result.logs);
   }, []);
 
+  const fetchRequests = useCallback(async () => {
+    const result = await apiGetAllRequests();
+    if (result.requests) setRequests(result.requests);
+  }, []);
+
   useEffect(() => {
     fetchCodes();
     fetchSessions();
     fetchLogs();
-  }, [fetchCodes, fetchSessions, fetchLogs]);
+    fetchRequests();
+  }, [fetchCodes, fetchSessions, fetchLogs, fetchRequests]);
 
   useEffect(() => {
     if (activeTab === 'sessions') fetchSessions();
     if (activeTab === 'logs') fetchLogs();
     if (activeTab === 'codes') fetchCodes();
-  }, [activeTab, fetchSessions, fetchLogs, fetchCodes]);
+    if (activeTab === 'requests') fetchRequests();
+  }, [activeTab, fetchSessions, fetchLogs, fetchCodes, fetchRequests]);
+
+  // Realtime: refresh requests on any change
+  useEffect(() => {
+    const channel = supabase
+      .channel('admin-requests-watch')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'user_requests' }, () => {
+        fetchRequests();
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [fetchRequests]);
+
+  const respondToRequest = async (id: string, status: 'accepted' | 'denied') => {
+    const response = responseDraft[id] || '';
+    await apiRespondRequest(id, status, response);
+    setResponseDraft(d => ({ ...d, [id]: '' }));
+    setCloudMsg(status === 'accepted' ? '✅ Request accepted — user notified!' : '❌ Request denied — user notified!');
+    fetchRequests();
+    setTimeout(() => setCloudMsg(''), 4000);
+  };
+
+  const deleteRequest = async (id: string) => {
+    if (!window.confirm('Delete this request?')) return;
+    await apiDeleteRequest(id);
+    fetchRequests();
+  };
 
   const addCode = async () => {
     const trimmed = newCode.trim();
@@ -153,11 +186,15 @@ export function AdminPanel({ onBack, onLogout }: AdminPanelProps) {
     return okFilter && okSearch;
   });
 
-  const tabs: { id: TabId; label: string; icon: string }[] = [
+  const pendingRequestCount = requests.filter(r => r.status === 'pending').length;
+  const filteredRequests = requests.filter(r => requestFilter === 'all' || r.status === requestFilter);
+
+  const tabs: { id: TabId; label: string; icon: string; badge?: number }[] = [
     { id: 'dashboard', label: 'Dashboard', icon: '📊' },
     { id: 'sessions', label: 'Sessions', icon: '👥' },
     { id: 'logs', label: 'Logs', icon: '📋' },
     { id: 'codes', label: 'Codes', icon: '🔑' },
+    { id: 'requests', label: 'Requests', icon: '💬', badge: pendingRequestCount },
   ];
 
   return (
