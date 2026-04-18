@@ -400,6 +400,107 @@ export function AdminPanel({ onBack, onLogout }: AdminPanelProps) {
           </div>
         </div>
       )}
+
+      {/* REQUESTS */}
+      {activeTab === 'requests' && (
+        <div className="max-w-6xl mx-auto px-4 py-5 w-full space-y-4">
+          <div className="flex items-center justify-between flex-wrap gap-3">
+            <div>
+              <h2 className="text-lg font-bold">💬 User Requests & Feedback</h2>
+              <p className="text-gray-500 text-xs mt-0.5">Comments, complaints, and requests from logged-in users · {pendingRequestCount} pending</p>
+            </div>
+            <button onClick={fetchRequests} className="px-3 py-2 bg-blue-600/20 text-blue-400 rounded-lg text-xs font-medium hover:bg-blue-600/30 border border-blue-600/30">🔄 Refresh</button>
+          </div>
+          {cloudMsg && <p className={`text-sm font-medium ${cloudMsg.startsWith('✅') ? 'text-green-400' : 'text-red-400'}`}>{cloudMsg}</p>}
+          <div className="flex gap-1.5 flex-wrap">
+            {(['pending', 'accepted', 'denied', 'all'] as const).map(f => (
+              <button key={f} onClick={() => setRequestFilter(f)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold capitalize transition-colors ${
+                  requestFilter === f
+                    ? f === 'pending' ? 'bg-yellow-500 text-yellow-950'
+                    : f === 'accepted' ? 'bg-emerald-500 text-emerald-950'
+                    : f === 'denied' ? 'bg-red-500 text-red-950'
+                    : 'bg-gray-300 text-gray-900'
+                    : 'bg-gray-900 text-gray-400 border border-gray-800 hover:bg-gray-800'
+                }`}
+              >
+                {f} {f === 'pending' && pendingRequestCount > 0 ? `(${pendingRequestCount})` : ''}
+              </button>
+            ))}
+          </div>
+          {filteredRequests.length === 0 ? (
+            <div className="bg-gray-900 rounded-xl border border-gray-800 p-12 text-center">
+              <div className="text-4xl mb-2">📭</div>
+              <p className="text-gray-400 text-sm">No {requestFilter === 'all' ? '' : requestFilter} requests.</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {filteredRequests.map(r => (
+                <div key={r.id} className={`bg-gray-900 rounded-xl border p-4 ${
+                  r.status === 'accepted' ? 'border-emerald-700/40' :
+                  r.status === 'denied' ? 'border-red-700/40' :
+                  'border-yellow-700/40'
+                }`}>
+                  <div className="flex items-start justify-between gap-3 mb-2 flex-wrap">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-bold text-white text-sm">{r.username}</span>
+                      <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded bg-gray-800 text-gray-300">{r.category}</span>
+                      <span className={`text-[10px] font-black uppercase px-1.5 py-0.5 rounded ${
+                        r.status === 'accepted' ? 'bg-emerald-500 text-emerald-950' :
+                        r.status === 'denied' ? 'bg-red-500 text-red-950' :
+                        'bg-yellow-500 text-yellow-950'
+                      }`}>
+                        {r.status}
+                      </span>
+                      <span className="text-[10px] text-gray-600">{new Date(r.created_at).toLocaleString()}</span>
+                    </div>
+                    <button onClick={() => deleteRequest(r.id)} className="text-gray-600 hover:text-red-400 text-xs">🗑️</button>
+                  </div>
+                  <p className="text-sm text-gray-200 whitespace-pre-wrap break-words mb-3 bg-gray-800/40 rounded-lg p-3">{r.message}</p>
+                  {r.admin_response && (
+                    <div className="text-xs text-gray-300 bg-gray-800/60 border-l-2 border-purple-500 rounded px-3 py-2 mb-2">
+                      <span className="font-bold text-purple-300">Your response:</span> {r.admin_response}
+                    </div>
+                  )}
+                  {r.status === 'pending' && (
+                    <div className="space-y-2">
+                      <textarea
+                        value={responseDraft[r.id] || ''}
+                        onChange={e => setResponseDraft(d => ({ ...d, [r.id]: e.target.value }))}
+                        placeholder="Optional response message..."
+                        rows={2}
+                        className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 text-xs focus:outline-none focus:border-purple-500 resize-none"
+                      />
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => respondToRequest(r.id, 'accepted')}
+                          className="flex-1 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold transition-colors"
+                        >
+                          ✓ Accept
+                        </button>
+                        <button
+                          onClick={() => respondToRequest(r.id, 'denied')}
+                          className="flex-1 py-2 bg-red-600 hover:bg-red-500 text-white rounded-lg text-xs font-bold transition-colors"
+                        >
+                          ✗ Deny
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                  {r.status !== 'pending' && (
+                    <button
+                      onClick={() => respondToRequest(r.id, 'accepted')}
+                      className="text-[10px] text-gray-500 hover:text-gray-300"
+                    >
+                      ⟲ Re-open / change status
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
