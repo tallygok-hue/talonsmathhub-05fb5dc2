@@ -34,7 +34,19 @@ interface LogEntry {
   created_at: string;
 }
 
-type TabId = 'dashboard' | 'sessions' | 'logs' | 'codes';
+interface RequestEntry {
+  id: string;
+  code_id: string;
+  username: string;
+  category: string;
+  message: string;
+  status: 'pending' | 'accepted' | 'denied';
+  admin_response: string | null;
+  created_at: string;
+  responded_at: string | null;
+}
+
+type TabId = 'dashboard' | 'sessions' | 'logs' | 'codes' | 'requests';
 
 export function AdminPanel({ onBack, onLogout }: AdminPanelProps) {
   const [activeTab, setActiveTab] = useState<TabId>('dashboard');
@@ -49,6 +61,9 @@ export function AdminPanel({ onBack, onLogout }: AdminPanelProps) {
   const [logSearch, setLogSearch] = useState('');
   const [newAdminCode, setNewAdminCode] = useState('');
   const [showAdminInput, setShowAdminInput] = useState(false);
+  const [requests, setRequests] = useState<RequestEntry[]>([]);
+  const [responseDraft, setResponseDraft] = useState<Record<string, string>>({});
+  const [requestFilter, setRequestFilter] = useState<'all' | 'pending' | 'accepted' | 'denied'>('pending');
 
   const fetchCodes = useCallback(async () => {
     const result = await apiGetCodes();
