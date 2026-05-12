@@ -93,7 +93,7 @@ export function FeedbackWidget() {
       {/* Floating action button */}
       <button
         onClick={() => setOpen(true)}
-        className="fixed bottom-4 right-4 z-40 bg-gradient-to-br from-pink-600 to-purple-700 text-white rounded-full shadow-lg shadow-pink-900/50 hover:scale-110 transition-transform p-3 flex items-center gap-2 text-sm font-bold"
+        className="fixed bottom-4 left-4 z-40 bg-gradient-to-br from-pink-600 to-purple-700 text-white rounded-full shadow-lg shadow-pink-900/50 hover:scale-110 transition-transform p-3 flex items-center gap-2 text-sm font-bold"
         title="Send feedback / request"
       >
         💬 Feedback
