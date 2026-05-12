@@ -3,7 +3,7 @@ import { MathHome } from '../components/MathHome';
 import { SecretLogin } from '../components/SecretLogin';
 import { GamePortal } from '../components/GamePortal';
 import { AdminPanel } from '../components/AdminPanel';
-import { apiLogin, apiValidateSession, apiLogout, getSessionToken, clearSessionToken } from '../lib/api';
+import { apiLogin, apiValidateSession, apiLogout, apiLogoutBeacon, getSessionToken, clearSessionToken } from '../lib/api';
 import { supabase } from '../integrations/supabase/client';
 
 export type AppView = 'math' | 'login' | 'games' | 'admin';
@@ -64,6 +64,18 @@ const Index = () => {
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
+  }, [isAuthenticated]);
+
+  // Auto-end session when leaving / closing the tab so codes free up immediately
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    const handler = () => apiLogoutBeacon();
+    window.addEventListener('pagehide', handler);
+    window.addEventListener('beforeunload', handler);
+    return () => {
+      window.removeEventListener('pagehide', handler);
+      window.removeEventListener('beforeunload', handler);
+    };
   }, [isAuthenticated]);
 
   const handleLogin = useCallback(async (username: string, code: string): Promise<{ success: boolean; isAdmin: boolean; message: string }> => {
