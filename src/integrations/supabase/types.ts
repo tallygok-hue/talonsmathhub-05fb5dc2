@@ -42,6 +42,7 @@ export type Database = {
         Row: {
           code_id: string
           created_at: string
+          device_hash: string | null
           id: string
           is_admin: boolean
           last_active: string
@@ -51,6 +52,7 @@ export type Database = {
         Insert: {
           code_id: string
           created_at?: string
+          device_hash?: string | null
           id?: string
           is_admin?: boolean
           last_active?: string
@@ -60,6 +62,7 @@ export type Database = {
         Update: {
           code_id?: string
           created_at?: string
+          device_hash?: string | null
           id?: string
           is_admin?: boolean
           last_active?: string
@@ -75,6 +78,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      banned_devices: {
+        Row: {
+          created_at: string
+          device_hash: string
+          id: string
+          last_user_agent: string | null
+          last_username: string | null
+          reason: string | null
+        }
+        Insert: {
+          created_at?: string
+          device_hash: string
+          id?: string
+          last_user_agent?: string | null
+          last_username?: string | null
+          reason?: string | null
+        }
+        Update: {
+          created_at?: string
+          device_hash?: string
+          id?: string
+          last_user_agent?: string | null
+          last_username?: string | null
+          reason?: string | null
+        }
+        Relationships: []
       }
       code_favorites: {
         Row: {
@@ -141,6 +171,7 @@ export type Database = {
         Row: {
           code_text: string | null
           created_at: string
+          device_hash: string | null
           id: string
           ip: string | null
           success: boolean
@@ -150,6 +181,7 @@ export type Database = {
         Insert: {
           code_text?: string | null
           created_at?: string
+          device_hash?: string | null
           id?: string
           ip?: string | null
           success?: boolean
@@ -159,6 +191,7 @@ export type Database = {
         Update: {
           code_text?: string | null
           created_at?: string
+          device_hash?: string | null
           id?: string
           ip?: string | null
           success?: boolean
