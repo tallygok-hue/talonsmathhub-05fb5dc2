@@ -236,7 +236,10 @@ export function GamePortal({ username, isAdmin, onLogout, onAdminPanel }: GamePo
         )}
       </header>
 
+      <PollsPanel />
+
       <div className="flex-1 relative">
+
         {luminLoading && (
           <div className="absolute inset-0 bg-gray-950 flex items-center justify-center z-10">
             <div className="text-center">
