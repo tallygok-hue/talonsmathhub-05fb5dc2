@@ -381,6 +381,41 @@ Deno.serve(async (req) => {
       return json({ success: true })
     }
 
+    // === CHAT ===
+    const requireSession = async (token: string | null) => {
+      if (!token) return null
+      const { data: s } = await supabase.from('active_sessions')
+        .select('code_id, username, is_admin').eq('session_token', token).maybeSingle()
+      return s || null
+    }
+
+    if (action === 'getChat') {
+      const { data } = await supabase.from('chat_messages')
+        .select('id, username, message, is_admin, created_at')
+        .order('created_at', { ascending: false }).limit(100)
+      return json({ messages: (data || []).reverse() })
+    }
+
+    if (action === 'sendChat') {
+      const body = await req.json()
+      const s = await requireSession(body.token)
+      if (!s) return json({ error: 'Unauthorized' }, 403)
+      const msg = String(body.message || '').trim().slice(0, 500)
+      if (!msg) return json({ error: 'Empty message' }, 400)
+      await supabase.from('chat_messages').insert({
+        code_id: s.code_id, username: s.username, message: msg, is_admin: s.is_admin,
+      })
+      return json({ success: true })
+    }
+
+    if (action === 'deleteChat') {
+      const body = await req.json()
+      const s = await requireAdmin(body.token)
+      if (!s) return json({ error: 'Unauthorized' }, 403)
+      await supabase.from('chat_messages').delete().eq('id', body.messageId)
+      return json({ success: true })
+    }
+
     return json({ error: 'Unknown action' }, 400)
   } catch (err) {
     return json({ error: String(err) }, 500)
