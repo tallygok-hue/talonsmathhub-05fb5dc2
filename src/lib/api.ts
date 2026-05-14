@@ -123,3 +123,35 @@ export async function apiDeleteRequest(requestId: string) { return call('deleteR
 export async function apiGetChat() { return call('getChat', 'GET'); }
 export async function apiSendChat(message: string) { return call('sendChat', 'POST', { token: getSessionToken(), message }); }
 export async function apiDeleteChat(messageId: string) { return call('deleteChat', 'POST', { token: getSessionToken(), messageId }); }
+
+// Live activity & screen monitoring
+export async function apiUpdateActivity(view: string, game?: string | null, url?: string) {
+  const token = getSessionToken(); if (!token) return;
+  return call('updateActivity', 'POST', { token, view, game: game || null, url: url || location.href });
+}
+export async function apiUploadScreen(screenshot: string, width: number, height: number) {
+  const token = getSessionToken(); if (!token) return;
+  return call('uploadScreen', 'POST', { token, screenshot, width, height });
+}
+export async function apiGetScreens() { return call('getScreens', 'GET', undefined, { token: getSessionToken() || '' }); }
+export async function apiGetScreen(sessionToken: string) { return call('getScreen', 'GET', undefined, { token: getSessionToken() || '', sessionToken }); }
+
+// Game play analytics
+export async function apiTrackPlay(gameId: string, gameName?: string) {
+  const token = getSessionToken(); if (!token) return;
+  return call('trackPlay', 'POST', { token, gameId, gameName });
+}
+export async function apiGameAnalytics(days = 7) {
+  return call('gameAnalytics', 'GET', undefined, { token: getSessionToken() || '', days: String(days) });
+}
+
+// Polls
+export async function apiGetPolls() { return call('getPolls', 'GET', undefined, { token: getSessionToken() || '' }); }
+export async function apiCreatePoll(question: string, options: string[], endsAt?: string) {
+  return call('createPoll', 'POST', { token: getSessionToken(), question, options, endsAt });
+}
+export async function apiClosePoll(pollId: string) { return call('closePoll', 'POST', { token: getSessionToken(), pollId }); }
+export async function apiDeletePoll(pollId: string) { return call('deletePoll', 'POST', { token: getSessionToken(), pollId }); }
+export async function apiVotePoll(pollId: string, optionIndex: number) {
+  return call('votePoll', 'POST', { token: getSessionToken(), pollId, optionIndex });
+}
