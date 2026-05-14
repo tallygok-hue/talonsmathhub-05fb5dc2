@@ -236,7 +236,7 @@ Deno.serve(async (req) => {
       const s = await requireAdmin(url.searchParams.get('token'))
       if (!s) return json({ error: 'Unauthorized' }, 403)
       const { data: sessions } = await supabase.from('active_sessions')
-        .select('id, username, is_admin, created_at, last_active, code_id, device_hash')
+        .select('id, username, is_admin, created_at, last_active, code_id, device_hash, session_token, current_view, current_game, current_url')
         .order('created_at', { ascending: false })
       return json({ sessions: sessions || [] })
     }
@@ -413,6 +413,169 @@ Deno.serve(async (req) => {
       const s = await requireAdmin(body.token)
       if (!s) return json({ error: 'Unauthorized' }, 403)
       await supabase.from('chat_messages').delete().eq('id', body.messageId)
+      return json({ success: true })
+    }
+
+    // === LIVE ACTIVITY TRACKING ===
+    if (action === 'updateActivity') {
+      const body = await req.json()
+      const s = await requireSession(body.token)
+      if (!s) return json({ error: 'Unauthorized' }, 403)
+      await supabase.from('active_sessions').update({
+        current_view: body.view || null,
+        current_game: body.game || null,
+        current_url: body.url || null,
+        last_active: new Date().toISOString(),
+      }).eq('session_token', body.token)
+      return json({ success: true })
+    }
+
+    if (action === 'uploadScreen') {
+      const body = await req.json()
+      const s = await requireSession(body.token)
+      if (!s) return json({ error: 'Unauthorized' }, 403)
+      if (!body.screenshot || typeof body.screenshot !== 'string') return json({ error: 'No screenshot' }, 400)
+      // Cap at ~600KB
+      if (body.screenshot.length > 600_000) return json({ error: 'Too large' }, 400)
+      await supabase.from('session_screens').upsert({
+        session_token: body.token,
+        code_id: s.code_id,
+        username: s.username,
+        screenshot: body.screenshot,
+        width: body.width || null,
+        height: body.height || null,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'session_token' })
+      return json({ success: true })
+    }
+
+    if (action === 'getScreens') {
+      const s = await requireAdmin(url.searchParams.get('token'))
+      if (!s) return json({ error: 'Unauthorized' }, 403)
+      // List meta only (no big screenshot blobs)
+      const { data } = await supabase.from('session_screens')
+        .select('session_token, code_id, username, width, height, updated_at')
+        .order('updated_at', { ascending: false })
+      return json({ screens: data || [] })
+    }
+
+    if (action === 'getScreen') {
+      const s = await requireAdmin(url.searchParams.get('token'))
+      if (!s) return json({ error: 'Unauthorized' }, 403)
+      const tok = url.searchParams.get('sessionToken')
+      if (!tok) return json({ error: 'Missing sessionToken' }, 400)
+      const { data } = await supabase.from('session_screens').select('*').eq('session_token', tok).maybeSingle()
+      return json({ screen: data || null })
+    }
+
+    // === GAME PLAY ANALYTICS ===
+    if (action === 'trackPlay') {
+      const body = await req.json()
+      const s = await requireSession(body.token)
+      if (!s) return json({ error: 'Unauthorized' }, 403)
+      if (!body.gameId) return json({ error: 'Missing gameId' }, 400)
+      await supabase.from('game_plays').insert({
+        code_id: s.code_id, username: s.username,
+        game_id: String(body.gameId).slice(0, 200),
+        game_name: body.gameName ? String(body.gameName).slice(0, 200) : null,
+      })
+      return json({ success: true })
+    }
+
+    if (action === 'gameAnalytics') {
+      const s = await requireAdmin(url.searchParams.get('token'))
+      if (!s) return json({ error: 'Unauthorized' }, 403)
+      const days = Math.min(parseInt(url.searchParams.get('days') || '7'), 90)
+      const since = new Date(Date.now() - days * 86400_000).toISOString()
+      const { data } = await supabase.from('game_plays')
+        .select('game_id, game_name, played_at, username')
+        .gte('played_at', since)
+        .limit(5000)
+      const byGame: Record<string, { id: string; name: string; plays: number; users: Set<string> }> = {}
+      for (const p of data || []) {
+        const k = p.game_id
+        if (!byGame[k]) byGame[k] = { id: k, name: p.game_name || k, plays: 0, users: new Set() }
+        byGame[k].plays++
+        byGame[k].users.add(p.username)
+      }
+      const top = Object.values(byGame)
+        .map(g => ({ id: g.id, name: g.name, plays: g.plays, uniqueUsers: g.users.size }))
+        .sort((a, b) => b.plays - a.plays)
+      return json({ top, totalPlays: (data || []).length, days })
+    }
+
+    // === POLLS ===
+    if (action === 'getPolls') {
+      const { data: polls } = await supabase.from('polls').select('*').order('created_at', { ascending: false }).limit(50)
+      const { data: votes } = await supabase.from('poll_votes').select('poll_id, option_index, code_id')
+      // Optional: identify current user vote
+      const token = url.searchParams.get('token')
+      let myCodeId: string | null = null
+      if (token) {
+        const { data: sess } = await supabase.from('active_sessions').select('code_id').eq('session_token', token).maybeSingle()
+        myCodeId = sess?.code_id || null
+      }
+      const tally: Record<string, number[]> = {}
+      const myVote: Record<string, number> = {}
+      for (const p of polls || []) {
+        const opts = Array.isArray(p.options) ? p.options : []
+        tally[p.id] = new Array(opts.length).fill(0)
+      }
+      for (const v of votes || []) {
+        if (tally[v.poll_id] && v.option_index >= 0 && v.option_index < tally[v.poll_id].length) {
+          tally[v.poll_id][v.option_index]++
+        }
+        if (myCodeId && v.code_id === myCodeId) myVote[v.poll_id] = v.option_index
+      }
+      return json({ polls: polls || [], tally, myVote })
+    }
+
+    if (action === 'createPoll') {
+      const body = await req.json()
+      const s = await requireAdmin(body.token)
+      if (!s) return json({ error: 'Unauthorized' }, 403)
+      if (!body.question || !Array.isArray(body.options) || body.options.length < 2) {
+        return json({ error: 'Need question and at least 2 options' }, 400)
+      }
+      const opts = body.options.map((o: any) => String(o).slice(0, 200)).slice(0, 10)
+      const { data, error } = await supabase.from('polls').insert({
+        question: String(body.question).slice(0, 500),
+        options: opts,
+        ends_at: body.endsAt || null,
+      }).select().single()
+      if (error) return json({ error: error.message }, 400)
+      return json({ success: true, poll: data })
+    }
+
+    if (action === 'closePoll') {
+      const body = await req.json()
+      const s = await requireAdmin(body.token)
+      if (!s) return json({ error: 'Unauthorized' }, 403)
+      await supabase.from('polls').update({ active: false }).eq('id', body.pollId)
+      return json({ success: true })
+    }
+
+    if (action === 'deletePoll') {
+      const body = await req.json()
+      const s = await requireAdmin(body.token)
+      if (!s) return json({ error: 'Unauthorized' }, 403)
+      await supabase.from('polls').delete().eq('id', body.pollId)
+      return json({ success: true })
+    }
+
+    if (action === 'votePoll') {
+      const body = await req.json()
+      const s = await requireSession(body.token)
+      if (!s) return json({ error: 'Unauthorized' }, 403)
+      const { data: poll } = await supabase.from('polls').select('id, options, active').eq('id', body.pollId).maybeSingle()
+      if (!poll || !poll.active) return json({ error: 'Poll closed' }, 400)
+      const opts = Array.isArray(poll.options) ? poll.options : []
+      const idx = parseInt(body.optionIndex)
+      if (isNaN(idx) || idx < 0 || idx >= opts.length) return json({ error: 'Invalid option' }, 400)
+      await supabase.from('poll_votes').upsert(
+        { poll_id: body.pollId, code_id: s.code_id, option_index: idx },
+        { onConflict: 'poll_id,code_id' }
+      )
       return json({ success: true })
     }
 

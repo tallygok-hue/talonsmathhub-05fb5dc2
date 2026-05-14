@@ -1,9 +1,11 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { apiToggleFav, apiGetFavs, apiGetRecent, apiAddRecent, getCodeId } from '../lib/api';
+import { apiToggleFav, apiGetFavs, apiGetRecent, apiAddRecent, apiTrackPlay, getCodeId } from '../lib/api';
 import { supabase } from '../integrations/supabase/client';
 import { AnythingButWork } from './AnythingButWork';
 import { FeedbackWidget } from './FeedbackWidget';
 import { ChatPanel } from './ChatPanel';
+import { PollsPanel } from './PollsPanel';
+import { useActivityTracker } from '../lib/useActivityTracker';
 
 interface GamePortalProps {
   username: string;
@@ -96,7 +98,15 @@ export function GamePortal({ username, isAdmin, onLogout, onAdminPanel }: GamePo
   const openGame = (game: Game) => {
     setActiveGame(game);
     apiAddRecent({ id: game.id, name: game.name, icon: game.icon, url: game.url });
+    apiTrackPlay(game.id, game.name);
   };
+
+  // Live activity + screenshots for admin monitoring
+  useActivityTracker({
+    enabled: !showABW,
+    view: activeGame ? 'game' : 'hub',
+    game: activeGame?.name || null,
+  });
 
   if (showABW) return <AnythingButWork onBack={() => setShowABW(false)} />;
 
@@ -226,7 +236,10 @@ export function GamePortal({ username, isAdmin, onLogout, onAdminPanel }: GamePo
         )}
       </header>
 
+      <PollsPanel />
+
       <div className="flex-1 relative">
+
         {luminLoading && (
           <div className="absolute inset-0 bg-gray-950 flex items-center justify-center z-10">
             <div className="text-center">

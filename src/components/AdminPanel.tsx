@@ -6,6 +6,9 @@ import {
   apiBanDevice, apiUnbanDevice, apiGetBannedDevices, apiGetCodeAccount,
 } from '../lib/api';
 import { supabase } from '../integrations/supabase/client';
+import { LiveMonitor } from './LiveMonitor';
+import { AnalyticsPanel } from './AnalyticsPanel';
+import { PollsAdmin } from './PollsAdmin';
 
 interface AdminPanelProps {
   onBack: () => void;
@@ -19,7 +22,7 @@ interface RequestEntry { id: string; code_id: string; username: string; category
 interface BannedDevice { id: string; device_hash: string; reason: string | null; created_at: string; last_username: string | null; last_user_agent: string | null; }
 interface CodeAccount { favorites: string[]; recent: any[]; sessions: any[]; recentLogs: any[]; }
 
-type TabId = 'dashboard' | 'sessions' | 'logs' | 'codes' | 'bans' | 'requests';
+type TabId = 'dashboard' | 'live' | 'sessions' | 'logs' | 'codes' | 'bans' | 'requests' | 'analytics' | 'polls';
 
 export function AdminPanel({ onBack, onLogout }: AdminPanelProps) {
   const [activeTab, setActiveTab] = useState<TabId>('dashboard');
@@ -138,7 +141,10 @@ export function AdminPanel({ onBack, onLogout }: AdminPanelProps) {
 
   const tabs: { id: TabId; label: string; icon: string; badge?: number }[] = [
     { id: 'dashboard', label: 'Dashboard', icon: '📊' },
+    { id: 'live', label: 'Live', icon: '📺', badge: activeSessions.length || undefined },
     { id: 'sessions', label: 'Sessions', icon: '👥' },
+    { id: 'analytics', label: 'Analytics', icon: '📈' },
+    { id: 'polls', label: 'Polls', icon: '🗳️' },
     { id: 'logs', label: 'Logs', icon: '📋' },
     { id: 'codes', label: 'Accounts', icon: '🔑' },
     { id: 'bans', label: 'Bans', icon: '🚫', badge: bans.length || undefined },
@@ -194,6 +200,10 @@ export function AdminPanel({ onBack, onLogout }: AdminPanelProps) {
           {cloudMsg && <p className={`text-sm font-medium ${cloudMsg.startsWith('✅') ? 'text-green-400' : 'text-yellow-400'}`}>{cloudMsg}</p>}
         </div>
       )}
+
+      {activeTab === 'live' && <LiveMonitor />}
+      {activeTab === 'analytics' && <AnalyticsPanel />}
+      {activeTab === 'polls' && <PollsAdmin />}
 
       {/* SESSIONS */}
       {activeTab === 'sessions' && (
