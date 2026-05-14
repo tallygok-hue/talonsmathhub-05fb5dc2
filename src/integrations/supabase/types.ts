@@ -106,6 +106,33 @@ export type Database = {
         }
         Relationships: []
       }
+      chat_messages: {
+        Row: {
+          code_id: string
+          created_at: string
+          id: string
+          is_admin: boolean
+          message: string
+          username: string
+        }
+        Insert: {
+          code_id: string
+          created_at?: string
+          id?: string
+          is_admin?: boolean
+          message: string
+          username: string
+        }
+        Update: {
+          code_id?: string
+          created_at?: string
+          id?: string
+          is_admin?: boolean
+          message?: string
+          username?: string
+        }
+        Relationships: []
+      }
       code_favorites: {
         Row: {
           code_id: string
