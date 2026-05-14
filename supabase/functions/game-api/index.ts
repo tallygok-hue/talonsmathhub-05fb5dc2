@@ -236,7 +236,7 @@ Deno.serve(async (req) => {
       const s = await requireAdmin(url.searchParams.get('token'))
       if (!s) return json({ error: 'Unauthorized' }, 403)
       const { data: sessions } = await supabase.from('active_sessions')
-        .select('id, username, is_admin, created_at, last_active, code_id, device_hash')
+        .select('id, username, is_admin, created_at, last_active, code_id, device_hash, session_token, current_view, current_game, current_url')
         .order('created_at', { ascending: false })
       return json({ sessions: sessions || [] })
     }
