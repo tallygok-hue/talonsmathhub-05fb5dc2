@@ -42,6 +42,9 @@ export type Database = {
         Row: {
           code_id: string
           created_at: string
+          current_game: string | null
+          current_url: string | null
+          current_view: string | null
           device_hash: string | null
           id: string
           is_admin: boolean
@@ -52,6 +55,9 @@ export type Database = {
         Insert: {
           code_id: string
           created_at?: string
+          current_game?: string | null
+          current_url?: string | null
+          current_view?: string | null
           device_hash?: string | null
           id?: string
           is_admin?: boolean
@@ -62,6 +68,9 @@ export type Database = {
         Update: {
           code_id?: string
           created_at?: string
+          current_game?: string | null
+          current_url?: string | null
+          current_view?: string | null
           device_hash?: string | null
           id?: string
           is_admin?: boolean
@@ -194,6 +203,33 @@ export type Database = {
           },
         ]
       }
+      game_plays: {
+        Row: {
+          code_id: string
+          game_id: string
+          game_name: string | null
+          id: string
+          played_at: string
+          username: string
+        }
+        Insert: {
+          code_id: string
+          game_id: string
+          game_name?: string | null
+          id?: string
+          played_at?: string
+          username: string
+        }
+        Update: {
+          code_id?: string
+          game_id?: string
+          game_name?: string | null
+          id?: string
+          played_at?: string
+          username?: string
+        }
+        Relationships: []
+      }
       login_logs: {
         Row: {
           code_text: string | null
@@ -224,6 +260,95 @@ export type Database = {
           success?: boolean
           user_agent?: string | null
           username?: string
+        }
+        Relationships: []
+      }
+      poll_votes: {
+        Row: {
+          code_id: string
+          created_at: string
+          id: string
+          option_index: number
+          poll_id: string
+        }
+        Insert: {
+          code_id: string
+          created_at?: string
+          id?: string
+          option_index: number
+          poll_id: string
+        }
+        Update: {
+          code_id?: string
+          created_at?: string
+          id?: string
+          option_index?: number
+          poll_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "poll_votes_poll_id_fkey"
+            columns: ["poll_id"]
+            isOneToOne: false
+            referencedRelation: "polls"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      polls: {
+        Row: {
+          active: boolean
+          created_at: string
+          ends_at: string | null
+          id: string
+          options: Json
+          question: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          ends_at?: string | null
+          id?: string
+          options: Json
+          question: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          ends_at?: string | null
+          id?: string
+          options?: Json
+          question?: string
+        }
+        Relationships: []
+      }
+      session_screens: {
+        Row: {
+          code_id: string
+          height: number | null
+          screenshot: string
+          session_token: string
+          updated_at: string
+          username: string
+          width: number | null
+        }
+        Insert: {
+          code_id: string
+          height?: number | null
+          screenshot: string
+          session_token: string
+          updated_at?: string
+          username: string
+          width?: number | null
+        }
+        Update: {
+          code_id?: string
+          height?: number | null
+          screenshot?: string
+          session_token?: string
+          updated_at?: string
+          username?: string
+          width?: number | null
         }
         Relationships: []
       }
