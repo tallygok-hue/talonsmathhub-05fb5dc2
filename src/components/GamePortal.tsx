@@ -3,6 +3,7 @@ import { apiToggleFav, apiGetFavs, apiGetRecent, apiAddRecent, getCodeId } from 
 import { supabase } from '../integrations/supabase/client';
 import { AnythingButWork } from './AnythingButWork';
 import { FeedbackWidget } from './FeedbackWidget';
+import { ChatPanel } from './ChatPanel';
 
 interface GamePortalProps {
   username: string;
