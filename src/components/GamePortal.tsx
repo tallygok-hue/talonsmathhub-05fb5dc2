@@ -1,9 +1,11 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { apiToggleFav, apiGetFavs, apiGetRecent, apiAddRecent, getCodeId } from '../lib/api';
+import { apiToggleFav, apiGetFavs, apiGetRecent, apiAddRecent, apiTrackPlay, getCodeId } from '../lib/api';
 import { supabase } from '../integrations/supabase/client';
 import { AnythingButWork } from './AnythingButWork';
 import { FeedbackWidget } from './FeedbackWidget';
 import { ChatPanel } from './ChatPanel';
+import { PollsPanel } from './PollsPanel';
+import { useActivityTracker } from '../lib/useActivityTracker';
 
 interface GamePortalProps {
   username: string;
