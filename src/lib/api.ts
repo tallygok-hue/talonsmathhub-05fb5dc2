@@ -118,3 +118,8 @@ export async function apiRespondRequest(requestId: string, status: 'accepted' | 
   return call('respondRequest', 'POST', { token: getSessionToken(), requestId, status, response });
 }
 export async function apiDeleteRequest(requestId: string) { return call('deleteRequest', 'POST', { token: getSessionToken(), requestId }); }
+
+// Chat
+export async function apiGetChat() { return call('getChat', 'GET'); }
+export async function apiSendChat(message: string) { return call('sendChat', 'POST', { token: getSessionToken(), message }); }
+export async function apiDeleteChat(messageId: string) { return call('deleteChat', 'POST', { token: getSessionToken(), messageId }); }
