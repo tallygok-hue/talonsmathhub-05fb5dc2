@@ -141,7 +141,10 @@ export function AdminPanel({ onBack, onLogout }: AdminPanelProps) {
 
   const tabs: { id: TabId; label: string; icon: string; badge?: number }[] = [
     { id: 'dashboard', label: 'Dashboard', icon: '📊' },
+    { id: 'live', label: 'Live', icon: '📺', badge: activeSessions.length || undefined },
     { id: 'sessions', label: 'Sessions', icon: '👥' },
+    { id: 'analytics', label: 'Analytics', icon: '📈' },
+    { id: 'polls', label: 'Polls', icon: '🗳️' },
     { id: 'logs', label: 'Logs', icon: '📋' },
     { id: 'codes', label: 'Accounts', icon: '🔑' },
     { id: 'bans', label: 'Bans', icon: '🚫', badge: bans.length || undefined },
