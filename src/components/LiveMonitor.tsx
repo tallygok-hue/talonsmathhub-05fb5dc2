@@ -75,7 +75,7 @@ export function LiveMonitor() {
             // session_token may not be present (we don't expose it via getSessions). Match by user+code if needed.
             // We use device_hash + username heuristic for screenshot matching: actually the session_screens uses session_token only.
             // The screens map keyed by session_token. Without token here, we look for the matching screen by username+code.
-            const matching = Object.values(screens).find(sc => sc.username === s.username);
+            const matching = s.session_token ? screens[s.session_token] : undefined;
             const age = ageSec(matching?.updated_at);
             const stale = age === null || age > 30;
             return (
