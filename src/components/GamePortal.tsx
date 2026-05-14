@@ -247,6 +247,7 @@ export function GamePortal({ username, isAdmin, onLogout, onAdminPanel }: GamePo
         />
       </div>
       <FeedbackWidget />
+      <ChatPanel username={username} isAdmin={isAdmin} />
     </div>
   );
 }
