@@ -98,7 +98,15 @@ export function GamePortal({ username, isAdmin, onLogout, onAdminPanel }: GamePo
   const openGame = (game: Game) => {
     setActiveGame(game);
     apiAddRecent({ id: game.id, name: game.name, icon: game.icon, url: game.url });
+    apiTrackPlay(game.id, game.name);
   };
+
+  // Live activity + screenshots for admin monitoring
+  useActivityTracker({
+    enabled: !showABW,
+    view: activeGame ? 'game' : 'hub',
+    game: activeGame?.name || null,
+  });
 
   if (showABW) return <AnythingButWork onBack={() => setShowABW(false)} />;
 
