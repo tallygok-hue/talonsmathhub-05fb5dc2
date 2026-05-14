@@ -201,6 +201,10 @@ export function AdminPanel({ onBack, onLogout }: AdminPanelProps) {
         </div>
       )}
 
+      {activeTab === 'live' && <LiveMonitor />}
+      {activeTab === 'analytics' && <AnalyticsPanel />}
+      {activeTab === 'polls' && <PollsAdmin />}
+
       {/* SESSIONS */}
       {activeTab === 'sessions' && (
         <div className="max-w-6xl mx-auto px-4 py-5 w-full space-y-4">
