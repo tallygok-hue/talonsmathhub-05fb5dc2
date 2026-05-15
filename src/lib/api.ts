@@ -155,3 +155,109 @@ export async function apiDeletePoll(pollId: string) { return call('deletePoll', 
 export async function apiVotePoll(pollId: string, optionIndex: number) {
   return call('votePoll', 'POST', { token: getSessionToken(), pollId, optionIndex });
 }
+
+// === Phase 1: Accounts / Profile / Quests / Update Notes / Flags ===
+export async function apiRegister(username: string, password: string) {
+  return call('register', 'POST', { username, password });
+}
+export async function apiSetUsername(username: string) {
+  return call('setUsername', 'POST', { token: getSessionToken(), username });
+}
+export async function apiMe() {
+  return call('me', 'GET', undefined, { token: getSessionToken() || '' });
+}
+export async function apiLeaderboard(period: 'all' | 'week' = 'all') {
+  return call('leaderboard', 'GET', undefined, { period });
+}
+export async function apiGetQuests() {
+  return call('getQuests', 'GET', undefined, { token: getSessionToken() || '' });
+}
+export async function apiGetUpdateLogs() {
+  return call('getUpdateLogs', 'GET', undefined, { token: getSessionToken() || '' });
+}
+export async function apiAckUpdateLog(updateLogId: string) {
+  return call('ackUpdateLog', 'POST', { token: getSessionToken(), updateLogId });
+}
+export async function apiCreateUpdateLog(payload: { version: string; title: string; body: string; highlights: string[]; severity?: string; target?: string; requireAck?: boolean; published?: boolean }) {
+  return call('createUpdateLog', 'POST', { token: getSessionToken(), ...payload });
+}
+export async function apiDeleteUpdateLog(updateLogId: string) {
+  return call('deleteUpdateLog', 'POST', { token: getSessionToken(), updateLogId });
+}
+export async function apiGetAnnouncements() {
+  return call('getAnnouncements', 'GET', undefined, { token: getSessionToken() || '' });
+}
+export async function apiAckAnnouncement(announcementId: string) {
+  return call('ackAnnouncement', 'POST', { token: getSessionToken(), announcementId });
+}
+export async function apiCreateAnnouncement(payload: { title: string; body: string; severity?: string; dismissable?: boolean; active?: boolean; target?: string }) {
+  return call('createAnnouncement', 'POST', { token: getSessionToken(), ...payload });
+}
+export async function apiDeleteAnnouncement(id: string) {
+  return call('deleteAnnouncement', 'POST', { token: getSessionToken(), id });
+}
+export async function apiGetAllAnnouncements() {
+  return call('getAllAnnouncements', 'GET', undefined, { token: getSessionToken() || '' });
+}
+export async function apiSetFlag(key: string, enabled: boolean, scope: 'all' | 'admins' = 'all') {
+  return call('setFlag', 'POST', { token: getSessionToken(), key, enabled, scope });
+}
+export async function apiGetAccounts() {
+  return call('getAccounts', 'GET', undefined, { token: getSessionToken() || '' });
+}
+export async function apiAdminUpdateAccount(payload: { accountId: string; role?: string; banned?: boolean; muteMinutes?: number; points?: number }) {
+  return call('adminUpdateAccount', 'POST', { token: getSessionToken(), ...payload });
+}
+export async function apiAdminGrantPerm(accountId: string, permKey: string) {
+  return call('adminGrantPerm', 'POST', { token: getSessionToken(), accountId, permKey });
+}
+export async function apiAdminRevokePerm(accountId: string, permKey: string) {
+  return call('adminRevokePerm', 'POST', { token: getSessionToken(), accountId, permKey });
+}
+export async function apiAdminAdjustPoints(accountId: string, amount: number, note?: string) {
+  return call('adminAdjustPoints', 'POST', { token: getSessionToken(), accountId, amount, note });
+}
+export async function apiGetPermissions() {
+  return call('getPermissions', 'GET', undefined, { token: getSessionToken() || '' });
+}
+export async function apiGetMultipliers() {
+  return call('getMultipliers', 'GET', undefined, { token: getSessionToken() || '' });
+}
+export async function apiCreateMultiplier(name: string, multiplier: number, startsAt: string, endsAt: string) {
+  return call('createMultiplier', 'POST', { token: getSessionToken(), name, multiplier, startsAt, endsAt });
+}
+export async function apiEndMultiplier(multiplierId: string) {
+  return call('endMultiplier', 'POST', { token: getSessionToken(), multiplierId });
+}
+export async function apiGetActiveMultiplier() {
+  return call('getActiveMultiplier', 'GET');
+}
+export async function apiAdminGetQuests() {
+  return call('adminGetQuests', 'GET', undefined, { token: getSessionToken() || '' });
+}
+export async function apiAdminCreateQuest(payload: { key: string; title: string; description: string; quest_type: 'daily' | 'weekly'; goal: number; reward: number; metric: string; active?: boolean }) {
+  return call('adminCreateQuest', 'POST', { token: getSessionToken(), ...payload });
+}
+export async function apiAdminUpdateQuest(questId: string, updates: any) {
+  return call('adminUpdateQuest', 'POST', { token: getSessionToken(), questId, ...updates });
+}
+export async function apiAdminDeleteQuest(questId: string) {
+  return call('adminDeleteQuest', 'POST', { token: getSessionToken(), questId });
+}
+export async function apiReportChat(messageId: string, reason: string) {
+  return call('reportChat', 'POST', { token: getSessionToken(), messageId, reason });
+}
+export async function apiGetReports() {
+  return call('getReports', 'GET', undefined, { token: getSessionToken() || '' });
+}
+export async function apiResolveReport(reportId: string) {
+  return call('resolveReport', 'POST', { token: getSessionToken(), reportId });
+}
+
+// Feature flag reader (anon-readable, direct from client)
+export async function apiReadFlags() {
+  const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/feature_flags?select=key,enabled,scope`, {
+    headers: { apikey: ANON_KEY, Authorization: `Bearer ${ANON_KEY}` },
+  });
+  return res.ok ? res.json() : [];
+}
