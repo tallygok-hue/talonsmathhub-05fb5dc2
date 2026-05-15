@@ -1,6 +1,6 @@
 
 -- Access codes table (replaces hardcoded codes)
-CREATE TABLE public.access_codes (
+CREATE TABLE IF NOT EXISTS public.access_codes (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   code TEXT NOT NULL UNIQUE,
   is_admin BOOLEAN NOT NULL DEFAULT false,
