@@ -22,22 +22,32 @@ export function SecretLogin({ onLogin, onBack, onSuccess }: SecretLoginProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!username.trim() || !code.trim()) {
+
+    const cleanUsername = username.trim();
+    const cleanCode = code.trim().toLowerCase();
+
+    if (!cleanUsername || !cleanCode) {
       setMessage('Please enter both username and access code.');
       setMessageType('error');
       return;
     }
+
     setLoading(true);
+
     try {
-      const result = await Promise.resolve(onLogin(username.trim(), code.trim()));
+      const result = await Promise.resolve(onLogin(cleanUsername, cleanCode));
+
       setMessage(result.message);
       setMessageType(result.success ? 'success' : 'error');
+
       if (result.success) {
-        setTimeout(() => { onSuccess(result.isAdmin); }, 800);
+        setTimeout(() => {
+          onSuccess(result.isAdmin);
+        }, 800);
       } else {
         setAttempts(prev => prev + 1);
       }
-    } catch {
+    } catch (err) {
       setMessage('An error occurred. Please try again.');
       setMessageType('error');
     } finally {
@@ -48,10 +58,13 @@ export function SecretLogin({ onLogin, onBack, onSuccess }: SecretLoginProps) {
   return (
     <div className="min-h-screen bg-gray-950 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        <button onClick={onBack}
-          className="text-gray-600 hover:text-gray-400 text-sm mb-8 flex items-center gap-2 transition-colors">
+        <button
+          onClick={onBack}
+          className="text-gray-600 hover:text-gray-400 text-sm mb-8 flex items-center gap-2 transition-colors"
+        >
           ← Back to Math Hub
         </button>
+
         <div className="bg-gray-900 rounded-2xl p-8 border border-gray-800 shadow-2xl">
           <div className="text-center mb-6">
             <div className="w-16 h-16 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -62,26 +75,53 @@ export function SecretLogin({ onLogin, onBack, onSuccess }: SecretLoginProps) {
             <h2 className="text-xl font-bold text-white">Restricted Access</h2>
             <p className="text-gray-500 text-sm mt-1">Enter your credentials to continue</p>
           </div>
+
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-400 mb-1">Username</label>
-              <input type="text" value={username} onChange={(e) => setUsername(e.target.value)}
+              <label className="block text-sm font-medium text-gray-400 mb-1">
+                Username
+              </label>
+              <input
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
                 className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
-                placeholder="Enter your name" autoComplete="off" />
+                placeholder="Enter your name"
+                autoComplete="off"
+              />
             </div>
+
             <div>
-              <label className="block text-sm font-medium text-gray-400 mb-1">Access Code</label>
-              <input type="password" value={code} onChange={(e) => setCode(e.target.value)}
+              <label className="block text-sm font-medium text-gray-400 mb-1">
+                Access Code
+              </label>
+              <input
+                type="password"
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
                 className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
-                placeholder="Enter access code" autoComplete="off" />
+                placeholder="Enter access code"
+                autoComplete="off"
+              />
             </div>
+
             {message && (
-              <div className={`p-3 rounded-lg text-sm font-medium ${
-                messageType === 'error' ? 'bg-red-900/50 text-red-400 border border-red-800' : 'bg-green-900/50 text-green-400 border border-green-800'
-              }`}>{message}</div>
+              <div
+                className={`p-3 rounded-lg text-sm font-medium ${
+                  messageType === 'error'
+                    ? 'bg-red-900/50 text-red-400 border border-red-800'
+                    : 'bg-green-900/50 text-green-400 border border-green-800'
+                }`}
+              >
+                {message}
+              </div>
             )}
-            <button type="submit" disabled={loading}
-              className="w-full py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
               {loading ? (
                 <span className="flex items-center justify-center gap-2">
                   <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
@@ -90,14 +130,22 @@ export function SecretLogin({ onLogin, onBack, onSuccess }: SecretLoginProps) {
                   </svg>
                   Verifying...
                 </span>
-              ) : 'Login'}
+              ) : (
+                'Login'
+              )}
             </button>
           </form>
+
           {attempts >= 3 && (
-            <p className="text-gray-600 text-xs text-center mt-4">Multiple failed attempts detected. All attempts are logged.</p>
+            <p className="text-gray-600 text-xs text-center mt-4">
+              Multiple failed attempts detected. All attempts are logged.
+            </p>
           )}
         </div>
-        <p className="text-gray-700 text-xs text-center mt-6">All login attempts are recorded and monitored.</p>
+
+        <p className="text-gray-700 text-xs text-center mt-6">
+          All login attempts are recorded and monitored.
+        </p>
       </div>
     </div>
   );
