@@ -1,152 +1,193 @@
-import { useState } from 'react';
+-- =========================
+-- ACCESS CODES TABLE
+-- =========================
 
-interface LoginResult {
-  success: boolean;
-  isAdmin: boolean;
-  message: string;
-}
+CREATE TABLE IF NOT EXISTS public.access_codes (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  code TEXT NOT NULL UNIQUE,
+  is_admin BOOLEAN NOT NULL DEFAULT false,
+  active BOOLEAN NOT NULL DEFAULT true,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
 
-interface SecretLoginProps {
-  onLogin: (username: string, code: string) => Promise<LoginResult> | LoginResult;
-  onBack: () => void;
-  onSuccess: (isAdmin: boolean) => void;
-}
+ALTER TABLE public.access_codes ENABLE ROW LEVEL SECURITY;
 
-export function SecretLogin({ onLogin, onBack, onSuccess }: SecretLoginProps) {
-  const [username, setUsername] = useState('');
-  const [code, setCode] = useState('');
-  const [message, setMessage] = useState('');
-  const [messageType, setMessageType] = useState<'error' | 'success'>('error');
-  const [loading, setLoading] = useState(false);
-  const [attempts, setAttempts] = useState(0);
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE tablename = 'access_codes'
+    AND policyname = 'No direct access'
+  ) THEN
+    CREATE POLICY "No direct access"
+    ON public.access_codes
+    FOR SELECT
+    USING (false);
+  END IF;
+END $$;
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
 
-    const cleanUsername = username.trim();
-    const cleanCode = code.trim().toLowerCase();
+-- =========================
+-- CODE FAVORITES TABLE
+-- =========================
 
-    if (!cleanUsername || !cleanCode) {
-      setMessage('Please enter both username and access code.');
-      setMessageType('error');
-      return;
-    }
+CREATE TABLE IF NOT EXISTS public.code_favorites (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  code_id UUID NOT NULL REFERENCES public.access_codes(id) ON DELETE CASCADE,
+  game_id TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE(code_id, game_id)
+);
 
-    setLoading(true);
+ALTER TABLE public.code_favorites ENABLE ROW LEVEL SECURITY;
 
-    try {
-      const result = await Promise.resolve(onLogin(cleanUsername, cleanCode));
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE tablename = 'code_favorites'
+    AND policyname = 'No direct access'
+  ) THEN
+    CREATE POLICY "No direct access"
+    ON public.code_favorites
+    FOR SELECT
+    USING (false);
+  END IF;
+END $$;
 
-      setMessage(result.message);
-      setMessageType(result.success ? 'success' : 'error');
 
-      if (result.success) {
-        setTimeout(() => {
-          onSuccess(result.isAdmin);
-        }, 800);
-      } else {
-        setAttempts(prev => prev + 1);
-      }
-    } catch (err) {
-      setMessage('An error occurred. Please try again.');
-      setMessageType('error');
-    } finally {
-      setLoading(false);
-    }
-  };
+-- =========================
+-- CODE PROGRESS TABLE
+-- =========================
 
-  return (
-    <div className="min-h-screen bg-gray-950 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        <button
-          onClick={onBack}
-          className="text-gray-600 hover:text-gray-400 text-sm mb-8 flex items-center gap-2 transition-colors"
-        >
-          ← Back to Math Hub
-        </button>
+CREATE TABLE IF NOT EXISTS public.code_progress (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  code_id UUID NOT NULL REFERENCES public.access_codes(id) ON DELETE CASCADE,
+  progress_type TEXT NOT NULL,
+  data JSONB NOT NULL DEFAULT '{}',
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE(code_id, progress_type)
+);
 
-        <div className="bg-gray-900 rounded-2xl p-8 border border-gray-800 shadow-2xl">
-          <div className="text-center mb-6">
-            <div className="w-16 h-16 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-              </svg>
-            </div>
-            <h2 className="text-xl font-bold text-white">Restricted Access</h2>
-            <p className="text-gray-500 text-sm mt-1">Enter your credentials to continue</p>
-          </div>
+ALTER TABLE public.code_progress ENABLE ROW LEVEL SECURITY;
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-400 mb-1">
-                Username
-              </label>
-              <input
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
-                placeholder="Enter your name"
-                autoComplete="off"
-              />
-            </div>
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE tablename = 'code_progress'
+    AND policyname = 'No direct access'
+  ) THEN
+    CREATE POLICY "No direct access"
+    ON public.code_progress
+    FOR SELECT
+    USING (false);
+  END IF;
+END $$;
 
-            <div>
-              <label className="block text-sm font-medium text-gray-400 mb-1">
-                Access Code
-              </label>
-              <input
-                type="password"
-                value={code}
-                onChange={(e) => setCode(e.target.value)}
-                className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
-                placeholder="Enter access code"
-                autoComplete="off"
-              />
-            </div>
 
-            {message && (
-              <div
-                className={`p-3 rounded-lg text-sm font-medium ${
-                  messageType === 'error'
-                    ? 'bg-red-900/50 text-red-400 border border-red-800'
-                    : 'bg-green-900/50 text-green-400 border border-green-800'
-                }`}
-              >
-                {message}
-              </div>
-            )}
+-- =========================
+-- ACTIVE SESSIONS TABLE
+-- =========================
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading ? (
-                <span className="flex items-center justify-center gap-2">
-                  <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                  </svg>
-                  Verifying...
-                </span>
-              ) : (
-                'Login'
-              )}
-            </button>
-          </form>
+CREATE TABLE IF NOT EXISTS public.active_sessions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  code_id UUID NOT NULL REFERENCES public.access_codes(id) ON DELETE CASCADE,
+  username TEXT NOT NULL,
+  session_token TEXT NOT NULL UNIQUE,
+  is_admin BOOLEAN NOT NULL DEFAULT false,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  last_active TIMESTAMPTZ NOT NULL DEFAULT now()
+);
 
-          {attempts >= 3 && (
-            <p className="text-gray-600 text-xs text-center mt-4">
-              Multiple failed attempts detected. All attempts are logged.
-            </p>
-          )}
-        </div>
+ALTER TABLE public.active_sessions ENABLE ROW LEVEL SECURITY;
 
-        <p className="text-gray-700 text-xs text-center mt-6">
-          All login attempts are recorded and monitored.
-        </p>
-      </div>
-    </div>
-  );
-}
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE tablename = 'active_sessions'
+    AND policyname = 'No direct access'
+  ) THEN
+    CREATE POLICY "No direct access"
+    ON public.active_sessions
+    FOR SELECT
+    USING (false);
+  END IF;
+END $$;
+
+
+-- =========================
+-- LOGIN LOGS TABLE
+-- =========================
+
+CREATE TABLE IF NOT EXISTS public.login_logs (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  username TEXT NOT NULL,
+  code_text TEXT,
+  success BOOLEAN NOT NULL DEFAULT false,
+  ip TEXT,
+  user_agent TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+ALTER TABLE public.login_logs ENABLE ROW LEVEL SECURITY;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE tablename = 'login_logs'
+    AND policyname = 'No direct access'
+  ) THEN
+    CREATE POLICY "No direct access"
+    ON public.login_logs
+    FOR SELECT
+    USING (false);
+  END IF;
+END $$;
+
+
+-- =========================
+-- REALTIME PUBLICATION SAFETY
+-- =========================
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables
+    WHERE pubname = 'supabase_realtime'
+    AND tablename = 'access_codes'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.access_codes;
+  END IF;
+END $$;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables
+    WHERE pubname = 'supabase_realtime'
+    AND tablename = 'active_sessions'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.active_sessions;
+  END IF;
+END $$;
+
+
+-- =========================
+-- SEED DATA (SAFE INSERTS)
+-- =========================
+
+INSERT INTO public.access_codes (code, is_admin)
+VALUES ('admintalon', true)
+ON CONFLICT (code) DO NOTHING;
+
+INSERT INTO public.access_codes (code, is_admin)
+VALUES 
+  ('talon2024', false),
+  ('mathgamer', false),
+  ('unblockedftw', false),
+  ('letmein99', false),
+  ('gamer123', false)
+ON CONFLICT (code) DO NOTHING;
