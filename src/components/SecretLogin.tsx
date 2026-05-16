@@ -1,193 +1,229 @@
--- =========================
--- ACCESS CODES TABLE
--- =========================
+import { useState } from 'react';
+import { apiRegister, apiSetUsername } from '../lib/api';
 
-CREATE TABLE IF NOT EXISTS public.access_codes (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  code TEXT NOT NULL UNIQUE,
-  is_admin BOOLEAN NOT NULL DEFAULT false,
-  active BOOLEAN NOT NULL DEFAULT true,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
-);
+interface LoginResult {
+  success: boolean;
+  isAdmin: boolean;
+  message: string;
+  mustSetUsername?: boolean;
+  username?: string | null;
+}
 
-ALTER TABLE public.access_codes ENABLE ROW LEVEL SECURITY;
+interface SecretLoginProps {
+  onLogin: (username: string, code: string) => Promise<LoginResult>;
+  onBack: () => void;
+  onSuccess: (admin: boolean) => void;
+}
 
-DO $$
-BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_policies
-    WHERE tablename = 'access_codes'
-    AND policyname = 'No direct access'
-  ) THEN
-    CREATE POLICY "No direct access"
-    ON public.access_codes
-    FOR SELECT
-    USING (false);
-  END IF;
-END $$;
+type Mode = 'code' | 'account' | 'register';
 
+export function SecretLogin({ onLogin, onBack, onSuccess }: SecretLoginProps) {
+  const [mode, setMode] = useState<Mode>('code');
+  const [accessCode, setAccessCode] = useState('');
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [newUsername, setNewUsername] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [needsUsername, setNeedsUsername] = useState(false);
+  const [pendingAdmin, setPendingAdmin] = useState(false);
+  const [message, setMessage] = useState('');
+  const [loading, setLoading] = useState(false);
 
--- =========================
--- CODE FAVORITES TABLE
--- =========================
+  const submitLogin = async () => {
+    if (loading) return;
+    const loginName = mode === 'code' ? '' : username.trim();
+    const secret = mode === 'code' ? accessCode.trim() : password;
+    if (!secret || (mode === 'account' && !loginName)) {
+      setMessage('Enter your code or username and password.');
+      return;
+    }
 
-CREATE TABLE IF NOT EXISTS public.code_favorites (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  code_id UUID NOT NULL REFERENCES public.access_codes(id) ON DELETE CASCADE,
-  game_id TEXT NOT NULL,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  UNIQUE(code_id, game_id)
-);
+    setLoading(true);
+    setMessage('');
+    const result = await onLogin(loginName, secret);
+    setLoading(false);
 
-ALTER TABLE public.code_favorites ENABLE ROW LEVEL SECURITY;
+    if (!result.success) {
+      setMessage(result.message || 'Login failed.');
+      return;
+    }
 
-DO $$
-BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_policies
-    WHERE tablename = 'code_favorites'
-    AND policyname = 'No direct access'
-  ) THEN
-    CREATE POLICY "No direct access"
-    ON public.code_favorites
-    FOR SELECT
-    USING (false);
-  END IF;
-END $$;
+    if (result.mustSetUsername) {
+      setPendingAdmin(result.isAdmin);
+      setNeedsUsername(true);
+      setMessage('Pick your permanent username to finish login.');
+      return;
+    }
 
+    onSuccess(result.isAdmin);
+  };
 
--- =========================
--- CODE PROGRESS TABLE
--- =========================
+  const submitRegister = async () => {
+    if (loading) return;
+    const cleanName = username.trim();
+    if (!cleanName || password.length < 4) {
+      setMessage('Username is required and password must be at least 4 characters.');
+      return;
+    }
+    if (password !== confirmPassword) {
+      setMessage('Passwords do not match.');
+      return;
+    }
 
-CREATE TABLE IF NOT EXISTS public.code_progress (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  code_id UUID NOT NULL REFERENCES public.access_codes(id) ON DELETE CASCADE,
-  progress_type TEXT NOT NULL,
-  data JSONB NOT NULL DEFAULT '{}',
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  UNIQUE(code_id, progress_type)
-);
+    setLoading(true);
+    setMessage('');
+    const result = await apiRegister(cleanName, password);
+    setLoading(false);
 
-ALTER TABLE public.code_progress ENABLE ROW LEVEL SECURITY;
+    if (!result.success) {
+      setMessage(result.message || 'Could not create account.');
+      return;
+    }
 
-DO $$
-BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_policies
-    WHERE tablename = 'code_progress'
-    AND policyname = 'No direct access'
-  ) THEN
-    CREATE POLICY "No direct access"
-    ON public.code_progress
-    FOR SELECT
-    USING (false);
-  END IF;
-END $$;
+    setMessage('Account created. Sign in now.');
+    setMode('account');
+    setConfirmPassword('');
+  };
 
+  const finishUsername = async () => {
+    if (loading) return;
+    const cleanName = newUsername.trim();
+    if (!cleanName) {
+      setMessage('Enter a username.');
+      return;
+    }
 
--- =========================
--- ACTIVE SESSIONS TABLE
--- =========================
+    setLoading(true);
+    const result = await apiSetUsername(cleanName);
+    setLoading(false);
 
-CREATE TABLE IF NOT EXISTS public.active_sessions (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  code_id UUID NOT NULL REFERENCES public.access_codes(id) ON DELETE CASCADE,
-  username TEXT NOT NULL,
-  session_token TEXT NOT NULL UNIQUE,
-  is_admin BOOLEAN NOT NULL DEFAULT false,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  last_active TIMESTAMPTZ NOT NULL DEFAULT now()
-);
+    if (!result.success) {
+      setMessage(result.message || result.error || 'Could not set username.');
+      return;
+    }
 
-ALTER TABLE public.active_sessions ENABLE ROW LEVEL SECURITY;
+    sessionStorage.setItem('tmh_user', cleanName);
+    onSuccess(pendingAdmin);
+  };
 
-DO $$
-BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_policies
-    WHERE tablename = 'active_sessions'
-    AND policyname = 'No direct access'
-  ) THEN
-    CREATE POLICY "No direct access"
-    ON public.active_sessions
-    FOR SELECT
-    USING (false);
-  END IF;
-END $$;
+  if (needsUsername) {
+    return (
+      <div className="min-h-screen bg-gray-950 text-white flex items-center justify-center px-4">
+        <div className="w-full max-w-md bg-gray-900 border border-gray-800 rounded-2xl p-6 shadow-2xl">
+          <button onClick={onBack} className="text-gray-400 hover:text-white text-sm mb-6">← Back</button>
+          <div className="text-center mb-6">
+            <div className="w-16 h-16 mx-auto rounded-2xl bg-blue-600 flex items-center justify-center text-3xl mb-3">👤</div>
+            <h1 className="text-2xl font-black">Choose Username</h1>
+            <p className="text-gray-400 text-sm mt-2">This name will show in chat and on your account.</p>
+          </div>
+          <input
+            value={newUsername}
+            onChange={(e) => setNewUsername(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') finishUsername(); }}
+            placeholder="username"
+            maxLength={20}
+            className="w-full px-4 py-3 rounded-xl bg-gray-950 border border-gray-700 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
+          />
+          {message && <p className="mt-3 text-sm text-yellow-300">{message}</p>}
+          <button
+            onClick={finishUsername}
+            disabled={loading}
+            className="w-full mt-4 py-3 bg-blue-600 hover:bg-blue-500 disabled:bg-gray-700 rounded-xl font-bold"
+          >
+            {loading ? 'Saving…' : 'Continue'}
+          </button>
+        </div>
+      </div>
+    );
+  }
 
+  return (
+    <div className="min-h-screen bg-gray-950 text-white flex items-center justify-center px-4">
+      <div className="w-full max-w-md bg-gray-900 border border-gray-800 rounded-2xl p-6 shadow-2xl">
+        <button onClick={onBack} className="text-gray-400 hover:text-white text-sm mb-6">← Back to math</button>
 
--- =========================
--- LOGIN LOGS TABLE
--- =========================
+        <div className="text-center mb-6">
+          <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-blue-600 to-cyan-500 flex items-center justify-center text-3xl mb-3">π</div>
+          <h1 className="text-2xl font-black">Talons Access</h1>
+          <p className="text-gray-400 text-sm mt-2">Sign in with an access code or your account.</p>
+        </div>
 
-CREATE TABLE IF NOT EXISTS public.login_logs (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  username TEXT NOT NULL,
-  code_text TEXT,
-  success BOOLEAN NOT NULL DEFAULT false,
-  ip TEXT,
-  user_agent TEXT,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
-);
+        <div className="grid grid-cols-3 gap-1 bg-gray-950 rounded-xl p-1 mb-5 border border-gray-800">
+          {[
+            ['code', 'Code'],
+            ['account', 'Account'],
+            ['register', 'New'],
+          ].map(([id, label]) => (
+            <button
+              key={id}
+              onClick={() => { setMode(id as Mode); setMessage(''); }}
+              className={`py-2 rounded-lg text-xs font-bold transition-colors ${mode === id ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white'}`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
 
-ALTER TABLE public.login_logs ENABLE ROW LEVEL SECURITY;
+        {mode === 'code' ? (
+          <div className="space-y-3">
+            <label className="block text-xs font-bold text-gray-400 uppercase tracking-wide">Access code</label>
+            <input
+              value={accessCode}
+              onChange={(e) => setAccessCode(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') submitLogin(); }}
+              type="password"
+              placeholder="Enter your code"
+              className="w-full px-4 py-3 rounded-xl bg-gray-950 border border-gray-700 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
+            />
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <div>
+              <label className="block text-xs font-bold text-gray-400 uppercase tracking-wide mb-1.5">Username</label>
+              <input
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="username"
+                className="w-full px-4 py-3 rounded-xl bg-gray-950 border border-gray-700 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-gray-400 uppercase tracking-wide mb-1.5">Password</label>
+              <input
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') mode === 'register' ? submitRegister() : submitLogin(); }}
+                type="password"
+                placeholder="password"
+                className="w-full px-4 py-3 rounded-xl bg-gray-950 border border-gray-700 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
+              />
+            </div>
+            {mode === 'register' && (
+              <div>
+                <label className="block text-xs font-bold text-gray-400 uppercase tracking-wide mb-1.5">Confirm password</label>
+                <input
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') submitRegister(); }}
+                  type="password"
+                  placeholder="confirm password"
+                  className="w-full px-4 py-3 rounded-xl bg-gray-950 border border-gray-700 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
+                />
+              </div>
+            )}
+          </div>
+        )}
 
-DO $$
-BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_policies
-    WHERE tablename = 'login_logs'
-    AND policyname = 'No direct access'
-  ) THEN
-    CREATE POLICY "No direct access"
-    ON public.login_logs
-    FOR SELECT
-    USING (false);
-  END IF;
-END $$;
+        {message && <p className="mt-4 text-sm text-yellow-300 bg-yellow-500/10 border border-yellow-500/20 rounded-xl px-3 py-2">{message}</p>}
 
-
--- =========================
--- REALTIME PUBLICATION SAFETY
--- =========================
-
-DO $$
-BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_publication_tables
-    WHERE pubname = 'supabase_realtime'
-    AND tablename = 'access_codes'
-  ) THEN
-    ALTER PUBLICATION supabase_realtime ADD TABLE public.access_codes;
-  END IF;
-END $$;
-
-DO $$
-BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_publication_tables
-    WHERE pubname = 'supabase_realtime'
-    AND tablename = 'active_sessions'
-  ) THEN
-    ALTER PUBLICATION supabase_realtime ADD TABLE public.active_sessions;
-  END IF;
-END $$;
-
-
--- =========================
--- SEED DATA (SAFE INSERTS)
--- =========================
-
-INSERT INTO public.access_codes (code, is_admin)
-VALUES ('admintalon', true)
-ON CONFLICT (code) DO NOTHING;
-
-INSERT INTO public.access_codes (code, is_admin)
-VALUES 
-  ('talon2024', false),
-  ('mathgamer', false),
-  ('unblockedftw', false),
-  ('letmein99', false),
-  ('gamer123', false)
-ON CONFLICT (code) DO NOTHING;
+        <button
+          onClick={mode === 'register' ? submitRegister : submitLogin}
+          disabled={loading}
+          className="w-full mt-5 py-3 bg-blue-600 hover:bg-blue-500 disabled:bg-gray-700 rounded-xl font-bold transition-colors"
+        >
+          {loading ? 'Working…' : mode === 'register' ? 'Create Account' : 'Login'}
+        </button>
+      </div>
+    </div>
+  );
+}
