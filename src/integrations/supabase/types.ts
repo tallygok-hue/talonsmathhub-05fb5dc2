@@ -143,7 +143,7 @@ export type Database = {
       active_sessions: {
         Row: {
           account_id: string | null
-          code_id: string
+          code_id: string | null
           created_at: string
           current_game: string | null
           current_url: string | null
@@ -157,7 +157,7 @@ export type Database = {
         }
         Insert: {
           account_id?: string | null
-          code_id: string
+          code_id?: string | null
           created_at?: string
           current_game?: string | null
           current_url?: string | null
@@ -171,7 +171,7 @@ export type Database = {
         }
         Update: {
           account_id?: string | null
-          code_id?: string
+          code_id?: string | null
           created_at?: string
           current_game?: string | null
           current_url?: string | null
@@ -319,7 +319,7 @@ export type Database = {
       chat_messages: {
         Row: {
           account_id: string | null
-          code_id: string
+          code_id: string | null
           created_at: string
           id: string
           image_url: string | null
@@ -329,7 +329,7 @@ export type Database = {
         }
         Insert: {
           account_id?: string | null
-          code_id: string
+          code_id?: string | null
           created_at?: string
           id?: string
           image_url?: string | null
@@ -339,7 +339,7 @@ export type Database = {
         }
         Update: {
           account_id?: string | null
-          code_id?: string
+          code_id?: string | null
           created_at?: string
           id?: string
           image_url?: string | null
@@ -422,21 +422,21 @@ export type Database = {
       code_favorites: {
         Row: {
           account_id: string | null
-          code_id: string
+          code_id: string | null
           created_at: string
           game_id: string
           id: string
         }
         Insert: {
           account_id?: string | null
-          code_id: string
+          code_id?: string | null
           created_at?: string
           game_id: string
           id?: string
         }
         Update: {
           account_id?: string | null
-          code_id?: string
+          code_id?: string | null
           created_at?: string
           game_id?: string
           id?: string
@@ -454,7 +454,7 @@ export type Database = {
       code_progress: {
         Row: {
           account_id: string | null
-          code_id: string
+          code_id: string | null
           data: Json
           id: string
           progress_type: string
@@ -462,7 +462,7 @@ export type Database = {
         }
         Insert: {
           account_id?: string | null
-          code_id: string
+          code_id?: string | null
           data?: Json
           id?: string
           progress_type: string
@@ -470,7 +470,7 @@ export type Database = {
         }
         Update: {
           account_id?: string | null
-          code_id?: string
+          code_id?: string | null
           data?: Json
           id?: string
           progress_type?: string
@@ -522,7 +522,7 @@ export type Database = {
       game_plays: {
         Row: {
           account_id: string | null
-          code_id: string
+          code_id: string | null
           game_id: string
           game_name: string | null
           id: string
@@ -531,7 +531,7 @@ export type Database = {
         }
         Insert: {
           account_id?: string | null
-          code_id: string
+          code_id?: string | null
           game_id: string
           game_name?: string | null
           id?: string
@@ -540,7 +540,7 @@ export type Database = {
         }
         Update: {
           account_id?: string | null
-          code_id?: string
+          code_id?: string | null
           game_id?: string
           game_name?: string | null
           id?: string
@@ -674,7 +674,7 @@ export type Database = {
       poll_votes: {
         Row: {
           account_id: string | null
-          code_id: string
+          code_id: string | null
           created_at: string
           id: string
           option_index: number
@@ -682,7 +682,7 @@ export type Database = {
         }
         Insert: {
           account_id?: string | null
-          code_id: string
+          code_id?: string | null
           created_at?: string
           id?: string
           option_index: number
@@ -690,7 +690,7 @@ export type Database = {
         }
         Update: {
           account_id?: string | null
-          code_id?: string
+          code_id?: string | null
           created_at?: string
           id?: string
           option_index?: number
@@ -823,7 +823,7 @@ export type Database = {
       session_screens: {
         Row: {
           account_id: string | null
-          code_id: string
+          code_id: string | null
           height: number | null
           screenshot: string
           session_token: string
@@ -833,7 +833,7 @@ export type Database = {
         }
         Insert: {
           account_id?: string | null
-          code_id: string
+          code_id?: string | null
           height?: number | null
           screenshot: string
           session_token: string
@@ -843,7 +843,7 @@ export type Database = {
         }
         Update: {
           account_id?: string | null
-          code_id?: string
+          code_id?: string | null
           height?: number | null
           screenshot?: string
           session_token?: string
@@ -936,7 +936,7 @@ export type Database = {
           account_id: string | null
           admin_response: string | null
           category: string
-          code_id: string
+          code_id: string | null
           created_at: string
           id: string
           message: string
@@ -949,7 +949,7 @@ export type Database = {
           account_id?: string | null
           admin_response?: string | null
           category?: string
-          code_id: string
+          code_id?: string | null
           created_at?: string
           id?: string
           message: string
@@ -962,7 +962,7 @@ export type Database = {
           account_id?: string | null
           admin_response?: string | null
           category?: string
-          code_id?: string
+          code_id?: string | null
           created_at?: string
           id?: string
           message?: string
@@ -1008,7 +1008,11 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      hash_password: { Args: { _password: string }; Returns: string }
+      verify_password: {
+        Args: { _account_id: string; _password: string }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never
