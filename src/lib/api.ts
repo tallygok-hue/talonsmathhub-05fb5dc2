@@ -32,8 +32,9 @@ export async function apiLogin(username: string, code: string) {
   if (result.success) {
     setSessionToken(result.sessionToken);
     sessionStorage.setItem('tmh_code_id', result.codeId);
-    sessionStorage.setItem('tmh_user', username);
+    sessionStorage.setItem('tmh_user', result.username || username || '');
     if (result.isAdmin) sessionStorage.setItem('tmh_admin', 'true');
+    else sessionStorage.removeItem('tmh_admin');
   }
   return result;
 }

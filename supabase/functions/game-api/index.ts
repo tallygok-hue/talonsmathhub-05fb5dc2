@@ -86,7 +86,6 @@ Deno.serve(async (req) => {
       const mult = await currentMultiplier()
       const amount = Math.max(0, Math.round(base * mult))
       if (amount === 0) return 0
-      await supabase.rpc as any // noop typing
       await supabase.from('point_transactions').insert({ account_id: accountId, amount, reason, meta: { ...meta, multiplier: mult } })
       const { data: cur } = await supabase.from('accounts').select('points, total_earned').eq('id', accountId).maybeSingle()
       await supabase.from('accounts').update({
