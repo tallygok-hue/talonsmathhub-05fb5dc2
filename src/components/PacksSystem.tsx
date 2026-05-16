@@ -100,7 +100,7 @@ export function PacksSystem({ userId, onPackOpened, currentBalance, onBalanceUpd
           <button
             onClick={() => setView('inventory')}
             className={`px-4 py-2 rounded font-bold text-sm transition-all ${
-              view === 'inventory'
+              false
                 ? 'bg-blue-600 text-white'
                 : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
             }`}

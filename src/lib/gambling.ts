@@ -43,7 +43,7 @@ export interface CooldownStatus {
 // Get current cooldown status
 export async function checkGamblingCooldown(userId: string): Promise<CooldownStatus> {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from('gambling_cooldowns')
       .select('cooldown_expires_at')
       .eq('user_id', userId)
@@ -71,7 +71,7 @@ export async function checkGamblingCooldown(userId: string): Promise<CooldownSta
 // Play coinflip (50/50, 2x payout)
 export async function playCoinflip(userId: string, wager: number): Promise<GamblingResult> {
   try {
-    const { data, error } = await supabase.rpc('play_coinflip', {
+    const { data, error } = await (supabase as any).rpc('play_coinflip', {
       p_user_id: userId,
       p_wager: wager,
     });
@@ -112,7 +112,7 @@ export async function playCoinflip(userId: string, wager: number): Promise<Gambl
 // Play dice (1-6, 4-6 wins 1.5x)
 export async function playDice(userId: string, wager: number): Promise<GamblingResult> {
   try {
-    const { data, error } = await supabase.rpc('play_dice', {
+    const { data, error } = await (supabase as any).rpc('play_dice', {
       p_user_id: userId,
       p_wager: wager,
     });
@@ -154,7 +154,7 @@ export async function playDice(userId: string, wager: number): Promise<GamblingR
 // Play slots (3 symbols, all 3 = 5x, 2 = 2x)
 export async function playSlots(userId: string, wager: number): Promise<GamblingResult> {
   try {
-    const { data, error } = await supabase.rpc('play_slots', {
+    const { data, error } = await (supabase as any).rpc('play_slots', {
       p_user_id: userId,
       p_wager: wager,
     });
@@ -198,7 +198,7 @@ export async function playSlots(userId: string, wager: number): Promise<Gambling
 // Play jackpot (1% chance 100x multiplier)
 export async function playJackpot(userId: string, wager: number): Promise<GamblingResult> {
   try {
-    const { data, error } = await supabase.rpc('play_jackpot', {
+    const { data, error } = await (supabase as any).rpc('play_jackpot', {
       p_user_id: userId,
       p_wager: wager,
     });
@@ -240,7 +240,7 @@ export async function playJackpot(userId: string, wager: number): Promise<Gambli
 // Get gambling stats
 export async function getGamblingStats(userId: string): Promise<GamblingStats | null> {
   try {
-    const { data, error } = await supabase.rpc('get_gambling_stats', {
+    const { data, error } = await (supabase as any).rpc('get_gambling_stats', {
       p_user_id: userId,
     });
 
@@ -248,7 +248,7 @@ export async function getGamblingStats(userId: string): Promise<GamblingStats | 
       return null;
     }
 
-    return data as GamblingStats;
+    return data as unknown as GamblingStats;
   } catch (err) {
     console.error('Stats error:', err);
     return null;
@@ -258,7 +258,7 @@ export async function getGamblingStats(userId: string): Promise<GamblingStats | 
 // Get recent games
 export async function getRecentGames(userId: string, limit: number = 20): Promise<GamblingTransaction[]> {
   try {
-    const { data, error } = await supabase.rpc('get_recent_games', {
+    const { data, error } = await (supabase as any).rpc('get_recent_games', {
       p_user_id: userId,
       p_limit: limit,
     });
@@ -267,7 +267,7 @@ export async function getRecentGames(userId: string, limit: number = 20): Promis
       return [];
     }
 
-    return (data || []) as GamblingTransaction[];
+    return (data || []) as unknown as GamblingTransaction[];
   } catch (err) {
     console.error('Recent games error:', err);
     return [];
@@ -279,7 +279,7 @@ export function subscribeToGamblingTransactions(
   userId: string,
   callback: (transaction: GamblingTransaction) => void
 ) {
-  return supabase
+  return (supabase as any)
     .channel(`gambling-${userId}`)
     .on(
       'postgres_changes',
@@ -302,7 +302,7 @@ export function subscribeToGamblingCooldown(
   userId: string,
   callback: (cooldownExpires: string) => void
 ) {
-  return supabase
+  return (supabase as any)
     .channel(`cooldown-${userId}`)
     .on(
       'postgres_changes',

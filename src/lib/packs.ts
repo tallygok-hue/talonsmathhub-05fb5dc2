@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { supabase } from '@/integrations/supabase/client';
 
 export interface PackType {
   id: string;
@@ -44,26 +44,26 @@ export interface PackOpeningResult {
 
 // Get all pack types
 export async function getPackTypes(filters?: { seasonal?: boolean; event?: boolean }) {
-  let query = supabase.from('pack_types').select('*');
+  let query = (supabase as any).from('pack_types').select('*');
 
   if (filters?.seasonal) query = query.eq('is_seasonal', true);
   if (filters?.event) query = query.eq('is_event_pack', true);
 
   const { data, error } = await query.order('created_at', { ascending: false });
   if (error) throw error;
-  return data as PackType[];
+  return data as unknown as PackType[];
 }
 
 // Get trending packs
 export async function getTrendingPacks() {
-  const { data, error } = await supabase.rpc('get_trending_packs');
+  const { data, error } = await (supabase as any).rpc('get_trending_packs');
   if (error) throw error;
   return data;
 }
 
 // Get single pack with cards
 export async function getPackWithCards(packId: string) {
-  const { data: packData, error: packError } = await supabase
+  const { data: packData, error: packError } = await (supabase as any)
     .from('pack_types')
     .select('*')
     .eq('id', packId)
@@ -71,7 +71,7 @@ export async function getPackWithCards(packId: string) {
 
   if (packError) throw packError;
 
-  const { data: cardsData, error: cardsError } = await supabase
+  const { data: cardsData, error: cardsError } = await (supabase as any)
     .from('collectible_cards')
     .select('*')
     .eq('pack_type_id', packId)
@@ -81,13 +81,13 @@ export async function getPackWithCards(packId: string) {
 
   return {
     ...packData,
-    cards: cardsData as CollectibleCard[],
+    cards: cardsData as unknown as CollectibleCard[],
   };
 }
 
 // Open a pack
 export async function openPack(userId: string, packTypeId: string, numCards: number = 3) {
-  const { data, error } = await supabase.rpc('open_pack', {
+  const { data, error } = await (supabase as any).rpc('open_pack', {
     p_user_id: userId,
     p_pack_type_id: packTypeId,
     p_num_cards: numCards,
@@ -99,7 +99,7 @@ export async function openPack(userId: string, packTypeId: string, numCards: num
 
 // Get user inventory
 export async function getUserCollectibles(userId: string) {
-  const { data, error } = await supabase
+  const { data, error } = await (supabase as any)
     .from('user_collectibles')
     .select(
       `
@@ -111,12 +111,12 @@ export async function getUserCollectibles(userId: string) {
     .order('acquired_at', { ascending: false });
 
   if (error) throw error;
-  return data as UserCollectible[];
+  return data as unknown as UserCollectible[];
 }
 
 // Get collection stats
 export async function getCollectionStats(userId: string) {
-  const { data, error } = await supabase.rpc('get_collection_stats', {
+  const { data, error } = await (supabase as any).rpc('get_collection_stats', {
     p_user_id: userId,
   });
 
@@ -126,7 +126,7 @@ export async function getCollectionStats(userId: string) {
 
 // Get user's pack openings history
 export async function getUserPackOpenings(userId: string, limit: number = 10) {
-  const { data, error } = await supabase
+  const { data, error } = await (supabase as any)
     .from('pack_openings')
     .select(
       `
@@ -144,52 +144,56 @@ export async function getUserPackOpenings(userId: string, limit: number = 10) {
 
 // Create new pack type (admin)
 export async function createPackType(pack: Omit<PackType, 'id'>) {
-  const { data, error } = await supabase
+  const { data, error } = await (supabase as any)
     .from('pack_types')
     .insert([pack])
     .select()
     .single();
 
   if (error) throw error;
-  return data as PackType;
+  return data as unknown as PackType;
 }
 
 // Create collectible cards (admin)
 export async function createCollectibleCards(cards: Omit<CollectibleCard, 'id'>[]) {
-  const { data, error } = await supabase
+  const { data, error } = await (supabase as any)
     .from('collectible_cards')
     .insert(cards)
     .select();
 
   if (error) throw error;
-  return data as CollectibleCard[];
+  return data as unknown as CollectibleCard[];
 }
 
 // Get single card details
 export async function getCardDetails(cardId: string) {
-  const { data, error } = await supabase
+  const { data, error } = await (supabase as any)
     .from('collectible_cards')
     .select('*')
     .eq('id', cardId)
     .single();
 
   if (error) throw error;
-  return data as CollectibleCard;
+  return data as unknown as CollectibleCard;
 }
 
 // Subscribe to user collectibles changes
 export function subscribeToCollectibles(userId: string, callback: (collectibles: UserCollectible[]) => void) {
-  const subscription = supabase
-    .from(`user_collectibles:user_id=eq.${userId}`)
-    .on('*', async () => {
-      const collectibles = await getUserCollectibles(userId);
-      callback(collectibles);
-    })
+  const channel = (supabase as any)
+    .channel(`collectibles-${userId}`)
+    .on(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: 'user_collectibles', filter: `user_id=eq.${userId}` },
+      async () => {
+        const collectibles = await getUserCollectibles(userId);
+        callback(collectibles);
+      }
+    )
     .subscribe();
 
   return {
     unsubscribe: () => {
-      supabase.removeSubscription(subscription);
+      supabase.removeChannel(channel);
     },
   };
 }
