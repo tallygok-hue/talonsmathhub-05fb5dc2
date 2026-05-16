@@ -78,15 +78,15 @@ const Index = () => {
     };
   }, [isAuthenticated]);
 
-  const handleLogin = useCallback(async (username: string, code: string): Promise<{ success: boolean; isAdmin: boolean; message: string }> => {
+  const handleLogin = useCallback(async (username: string, code: string): Promise<{ success: boolean; isAdmin: boolean; message: string; mustSetUsername?: boolean; username?: string | null }> => {
     try {
       const result = await apiLogin(username, code);
       if (result.success) {
         setIsAuthenticated(true);
-        setCurrentUser(username);
+        setCurrentUser(result.username || username || 'Player');
         setIsAdmin(result.isAdmin);
       }
-      return { success: result.success, isAdmin: result.isAdmin || false, message: result.message };
+      return { success: result.success, isAdmin: result.isAdmin || false, message: result.message, mustSetUsername: result.mustSetUsername, username: result.username };
     } catch {
       return { success: false, isAdmin: false, message: 'Connection error. Try again.' };
     }
