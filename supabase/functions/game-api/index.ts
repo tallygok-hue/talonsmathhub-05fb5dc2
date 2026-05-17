@@ -912,11 +912,15 @@ Deno.serve(async (req) => {
       if (!s) return json({ error: 'Unauthorized' }, 403)
       const codeId = url.searchParams.get('codeId')
       if (!codeId) return json({ error: 'Missing codeId' }, 400)
+      const { data: acct } = await supabase.from('accounts').select('username').eq('id', codeId).maybeSingle()
+      const acctUsername = acct?.username || null
       const [favs, progress, sessions, logs] = await Promise.all([
         supabase.from('code_favorites').select('game_id, created_at').eq('account_id', codeId),
         supabase.from('code_progress').select('progress_type, data').eq('account_id', codeId),
         supabase.from('active_sessions').select('username, created_at, last_active, device_hash').eq('account_id', codeId),
-        supabase.from('login_logs').select('username, created_at, success, device_hash').order('created_at', { ascending: false }).limit(50),
+        acctUsername
+          ? supabase.from('login_logs').select('username, created_at, success, device_hash').eq('username', acctUsername).order('created_at', { ascending: false }).limit(50)
+          : Promise.resolve({ data: [] as any }),
       ])
       const recent = (progress.data || []).find((p: any) => p.progress_type === 'recent_games')?.data?.list || []
       return json({ favorites: (favs.data || []).map((f: any) => f.game_id), recent, sessions: sessions.data || [], recentLogs: logs.data || [] })
