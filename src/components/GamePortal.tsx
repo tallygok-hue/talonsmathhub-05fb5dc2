@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { apiToggleFav, apiGetFavs, apiGetRecent, apiAddRecent, apiTrackPlay, getCodeId } from '../lib/api';
 import { supabase } from '../integrations/supabase/client';
-import { AnythingButWork } from './AnythingButWork';
+
 import { FeedbackWidget } from './FeedbackWidget';
 import { ChatPanel } from './ChatPanel';
 import { PollsPanel } from './PollsPanel';
@@ -56,7 +56,7 @@ export function GamePortal({ username, isAdmin, onLogout, onAdminPanel }: GamePo
   const iframeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [favorites, setFavorites] = useState<string[]>([]);
   const [recent, setRecent] = useState<RecentGame[]>([]);
-  const [showABW, setShowABW] = useState(false);
+  
   const [luminLoading, setLuminLoading] = useState(true);
   const [accountOpen, setAccountOpen] = useState(false);
 
@@ -103,12 +103,12 @@ export function GamePortal({ username, isAdmin, onLogout, onAdminPanel }: GamePo
 
   // Live activity + screenshots for admin monitoring
   useActivityTracker({
-    enabled: !showABW,
+    enabled: true,
     view: activeGame ? 'game' : 'hub',
     game: activeGame?.name || null,
   });
 
-  if (showABW) return <AnythingButWork onBack={() => setShowABW(false)} />;
+  
 
   // Active game iframe overlay
   if (activeGame) {
@@ -192,7 +192,7 @@ export function GamePortal({ username, isAdmin, onLogout, onAdminPanel }: GamePo
             <button onClick={() => setAccountOpen(v => !v)} className="px-3 py-2 bg-blue-600/20 text-blue-300 rounded-lg text-xs font-medium hover:bg-blue-600/30 border border-blue-600/30">
               👤 Account ({favGames.length}⭐ · {recentGames.length}🕒)
             </button>
-            <button onClick={() => setShowABW(true)} className="px-3 py-2 bg-purple-600/20 text-purple-400 rounded-lg text-xs font-medium hover:bg-purple-600/30 border border-purple-600/30">🚫 ABW</button>
+            
             {isAdmin && (
               <button onClick={onAdminPanel} className="px-3 py-2 bg-yellow-600/20 text-yellow-400 rounded-lg text-xs font-medium hover:bg-yellow-600/30 border border-yellow-600/30">⚙️ Admin</button>
             )}
