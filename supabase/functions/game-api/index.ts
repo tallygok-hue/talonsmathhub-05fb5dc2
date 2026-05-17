@@ -1054,7 +1054,7 @@ Deno.serve(async (req) => {
     if (action === 'getPolls') {
       const { data: polls } = await supabase.from('polls').select('*').order('created_at', { ascending: false }).limit(50)
       const { data: votes } = await supabase.from('poll_votes').select('poll_id, option_index, account_id, code_id')
-      const token = url.searchParams.get('token')
+      const token = getToken()
       let myAccId: string | null = null
       if (token) {
         const { data: sess } = await supabase.from('active_sessions').select('account_id, code_id').eq('session_token', token).maybeSingle()
