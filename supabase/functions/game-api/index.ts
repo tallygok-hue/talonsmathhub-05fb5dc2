@@ -212,6 +212,7 @@ Deno.serve(async (req) => {
         success: !!account,
         ip, user_agent: userAgent, device_hash: deviceHash,
       })
+      await supabase.from('login_attempts').insert({ ip, success: !!account })
 
       if (!account) return json({ success: false, message: 'Invalid login. Check username and password.' })
       if (account.banned) return json({ success: false, message: 'Account banned.' })
