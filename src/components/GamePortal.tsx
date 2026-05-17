@@ -5,6 +5,7 @@ import { supabase } from '../integrations/supabase/client';
 import { FeedbackWidget } from './FeedbackWidget';
 import { ChatPanel } from './ChatPanel';
 import { PollsPanel } from './PollsPanel';
+import { ProfilePanel } from './ProfilePanel';
 import { useActivityTracker } from '../lib/useActivityTracker';
 
 interface GamePortalProps {
@@ -59,6 +60,7 @@ export function GamePortal({ username, isAdmin, onLogout, onAdminPanel }: GamePo
   
   const [luminLoading, setLuminLoading] = useState(true);
   const [accountOpen, setAccountOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
 
   // Load favs + recent from cloud
   const refreshAccount = useCallback(async () => {
@@ -189,6 +191,9 @@ export function GamePortal({ username, isAdmin, onLogout, onAdminPanel }: GamePo
             </div>
           </div>
           <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
+            <button onClick={() => setProfileOpen(true)} className="px-3 py-2 bg-purple-600/20 text-purple-300 rounded-lg text-xs font-medium hover:bg-purple-600/30 border border-purple-600/30">
+              ✨ Profile
+            </button>
             <button onClick={() => setAccountOpen(v => !v)} className="px-3 py-2 bg-blue-600/20 text-blue-300 rounded-lg text-xs font-medium hover:bg-blue-600/30 border border-blue-600/30">
               👤 Account ({favGames.length}⭐ · {recentGames.length}🕒)
             </button>
@@ -261,6 +266,7 @@ export function GamePortal({ username, isAdmin, onLogout, onAdminPanel }: GamePo
       </div>
       <FeedbackWidget />
       <ChatPanel username={username} isAdmin={isAdmin} />
+      {profileOpen && <ProfilePanel onClose={() => setProfileOpen(false)} />}
     </div>
   );
 }

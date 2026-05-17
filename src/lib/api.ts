@@ -170,6 +170,9 @@ export async function apiSetUsername(username: string) {
 export async function apiMe() {
   return call('me', 'GET');
 }
+export async function apiUpdateProfile(updates: { display_name?: string; avatar_emoji?: string; bio?: string; name_color?: string }) {
+  return call('updateProfile', 'POST', updates);
+}
 export async function apiLeaderboard(period: 'all' | 'week' = 'all') {
   return call('leaderboard', 'GET', undefined, { period });
 }
