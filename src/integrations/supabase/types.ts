@@ -76,9 +76,12 @@ export type Database = {
       }
       accounts: {
         Row: {
+          avatar_emoji: string
           banned: boolean
+          bio: string | null
           chat_count: number
           created_at: string
+          display_name: string | null
           equipped: Json
           id: string
           inventory: Json
@@ -87,6 +90,7 @@ export type Database = {
           last_streak_date: string | null
           must_set_username: boolean
           muted_until: string | null
+          name_color: string
           password_hash: string
           points: number
           role: string
@@ -97,9 +101,12 @@ export type Database = {
           username: string | null
         }
         Insert: {
+          avatar_emoji?: string
           banned?: boolean
+          bio?: string | null
           chat_count?: number
           created_at?: string
+          display_name?: string | null
           equipped?: Json
           id: string
           inventory?: Json
@@ -108,6 +115,7 @@ export type Database = {
           last_streak_date?: string | null
           must_set_username?: boolean
           muted_until?: string | null
+          name_color?: string
           password_hash: string
           points?: number
           role?: string
@@ -118,9 +126,12 @@ export type Database = {
           username?: string | null
         }
         Update: {
+          avatar_emoji?: string
           banned?: boolean
+          bio?: string | null
           chat_count?: number
           created_at?: string
+          display_name?: string | null
           equipped?: Json
           id?: string
           inventory?: Json
@@ -129,6 +140,7 @@ export type Database = {
           last_streak_date?: string | null
           must_set_username?: boolean
           muted_until?: string | null
+          name_color?: string
           password_hash?: string
           points?: number
           role?: string
@@ -1029,6 +1041,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      has_permission: {
+        Args: { _account_id: string; _key: string }
+        Returns: boolean
+      }
       hash_password: { Args: { _password: string }; Returns: string }
       verify_password: {
         Args: { _account_id: string; _password: string }
