@@ -164,7 +164,16 @@ Deno.serve(async (req) => {
       const password = String(body.code || body.password || '')  // legacy: "code" was the secret
       const deviceHash = body.deviceHash || null
       const userAgent = (req.headers.get('user-agent') || '').substring(0, 200)
-      const ip = req.headers.get('x-forwarded-for') || 'unknown'
+      const ip = (req.headers.get('x-forwarded-for') || 'unknown').split(',')[0].trim()
+
+      // IP-based rate limit: max 10 failed attempts in 10 minutes
+      const windowStart = new Date(Date.now() - 10 * 60_000).toISOString()
+      const { count: failed } = await supabase.from('login_attempts')
+        .select('id', { count: 'exact', head: true })
+        .eq('ip', ip).eq('success', false).gte('created_at', windowStart)
+      if ((failed ?? 0) >= 10) {
+        return json({ success: false, message: 'Too many failed attempts. Try again later.' }, 429)
+      }
 
       // device ban check
       if (deviceHash) {
