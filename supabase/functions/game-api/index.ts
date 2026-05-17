@@ -1118,6 +1118,7 @@ Deno.serve(async (req) => {
 
     return json({ error: 'Unknown action' }, 400)
   } catch (err) {
-    return json({ error: String(err) }, 500)
+    console.error('game-api error:', err)
+    return json({ error: 'Internal server error' }, 500)
   }
 })
