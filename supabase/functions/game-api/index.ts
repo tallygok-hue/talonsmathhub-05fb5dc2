@@ -44,6 +44,10 @@ Deno.serve(async (req) => {
   try {
     const url = new URL(req.url)
     const action = url.searchParams.get('action') || ''
+    // Prefer header-supplied session token; fall back to query string only for sendBeacon-style requests.
+    const headerToken = req.headers.get('x-session-token')
+    const tokenFromUrl = url.searchParams.get('token')
+    const getToken = (bodyToken?: string | null) => headerToken || bodyToken || tokenFromUrl || null
 
     // ============================================================
     // SESSION HELPERS
