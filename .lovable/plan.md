@@ -1,111 +1,67 @@
+## Scope
 
-# Major Overhaul — Phased Rollout (with admin-controlled Phase 2 release)
+This is a multi-week overhaul touching nearly every part of the app. To keep it shippable, I'll deliver it in **5 phases**, each independently testable. You can pause/redirect between any phase.
 
-Phase 1 ships fully built. **Phase 2 code also ships in this build but stays hidden behind admin-controlled feature flags** — flip a switch tomorrow and shop / cosmetics / tab cloaking go live for everyone instantly.
-
----
-
-## Phase 1 — Foundation (live immediately)
-
-### 1. Real account system
-- Convert each existing access code → account row. Code becomes the password hash; first login forces user to **pick a permanent username** (unique). Admin codes convert to admin accounts.
-- `accounts` table: `id, username, password_hash, role, points, total_earned, chat_count, streak_days, last_chat_at, muted_until, banned, settings, inventory, equipped, must_set_username`.
-- Granular `permissions` + `account_permissions`.
-- Sessions tied to `account_id`. Logout, multi-device, real-time termination preserved.
-- Login screen gets Register tab (admin-disableable). Zod validation, bcrypt via pgcrypto.
-- Favorites, recents, points, inventory keyed to `account_id` (existing tables get `account_id` column, backfilled from `code_id`).
-
-### 2. Chat upgrade
-- Username + cube avatar (deterministic from username hash) on every message.
-- Sent vs received alignment, distinct bubbles.
-- **Auto-clear every 24h** via pg_cron — points untouched, only `chat_messages` rows purged.
-- Anti-spam: rate limit, duplicate-flood detection, profanity filter, mute system.
-- Report button → admin queue.
-- Image/GIF upload UI shipped + storage bucket created, gated by permission.
-- Realtime preserved.
-
-### 3. Points & quests economy
-- Earn from chatting (diminishing returns + cooldown), daily login streak, poll votes, quest completion, tracked game plays.
-- **Daily quests** (3/day, rotate 00:00) and **weekly quests** (5/week, rotate Monday). Tables: `quests`, `quest_progress`.
-- Admin: create quest templates, manage rotation pool.
-- Leaderboards: top all-time + this week.
-
-### 4. Scheduled 2x points events
-- `MultiplierAdmin` wired to real `point_multipliers` table. Edge function applies highest active multiplier. Fully automatic.
-
-### 5. Weekly polls scheduler
-- Recurring weekly poll templates. Cron auto-posts Monday, closes + archives Sunday. Voting awards points + counts toward weekly quest.
-
-### 6. Announcements + Update Log
-- `announcements`: severity, dismissable, active. **Non-dismissable** = full-screen blocking modal until acknowledged (per account).
-- `update_logs`: latest entry pops up on first login after publish, then archived in "What's New".
-- Admin composer with markdown preview.
-
-### 7. Update Notes system (admin-authored, auto-shown)
-- Dedicated `update_logs` table: `id, version, title, body_md, highlights (jsonb array of bullet points), severity, published_at, published_by, target ('all'|'admins'), require_ack`.
-- **Admin "Update Notes" tab** in admin panel: rich composer (title, semver-style version, highlights list, full markdown body, optional banner image), live preview, draft → publish workflow.
-- On publish: every account gets a pending entry in `update_log_acks`. Next time they load the app, a polished modal pops up showing the latest unread note (with a "What's New ✨" header, highlights as a checklist, full body collapsible). They click "Got it" → ack recorded → won't show again.
-- If `require_ack = true`, modal is non-dismissable until acknowledged (same UX as critical announcements).
-- Users can reopen any past update note from a **"What's New" button** in the header (badge shows count of unread).
-- First post-Phase-1 update note is auto-seeded so every existing user sees the "Welcome to Accounts" walkthrough on first login.
-- Phase 2 flip tomorrow can be paired with a new update note announcing shop/cosmetics — published from the same composer.
-
-### 8. Admin panel additions
-- Tabs: Accounts, Quests, Multipliers, Announcements, **Update Notes**, Reports queue, **Feature Flags** + existing Live/Analytics/Polls.
-- All actions audit-logged.
-
-### 9. Keyboard shortcut
-- Global `Ctrl+Shift+G` toggles the games portal.
+A lot of the underlying scaffolding (accounts, sessions, chat, polls, point_multipliers, packs, gambling, economy dashboard, activity tracker, admin panel) already exists from earlier work. Most of this plan is **completing, wiring, and polishing** what's there — not building from scratch.
 
 ---
 
-## Phase 2 — Ships dark, you flip tomorrow
+## Phase 1 — Account system hardening
+- Persistent accounts with username + bcrypt password (already in `accounts` table — verify hash flow end-to-end).
+- Proper login / logout / session restore (already wired via `apiLogin` / `apiValidateSession`).
+- "First login with code → set permanent username + password" flow.
+- Role-based permissions: replace ad-hoc `is_admin` checks with `account_permissions` lookups (table exists). Add `has_permission(account_id, key)` SQL function.
+- Saved profile: display name, avatar (emoji or uploaded), bio, equipped cosmetics.
+- New `/profile` view inside the games hub.
 
-Built in this same release, wrapped in feature flags. `feature_flags` table is admin-editable from the **Feature Flags** tab — toggle on/off, scope to "everyone" or "admin-only preview", schedule a future activation time. Frontend listens via realtime; flips are instant for every connected user.
+## Phase 2 — Admin panel completion
+- Tabs: Users · Sessions · Chat moderation · Economy · Polls · Packs · Feature flags · Multipliers · Audit log.
+- Per-account permission editor (toggle keys from `permissions` table).
+- Moderation: ban / unban, mute (duration), kick session, delete message, view reports queue.
+- Scheduled 2x point events: form to create `point_multipliers` rows with start/end timestamps; edge function reads active multiplier and applies to all point grants.
+- Feature flags UI on `feature_flags` (already has public-read RLS).
+- Audit log viewer.
 
-Flags shipped:
-- `shop_enabled` — full shop UI + inventory + equip system. Categories: chat power perks, economy perks, access perks, vanity & flex perks. (Pack discounts excluded — packs come in Phase 4.)
-- `cosmetics_enabled` — username colors, animated tags, cube avatar variants, badges, custom join sounds, pin-own-message, message highlights.
-- `image_uploads_enabled` — flips chat image/GIF gate to honor shop purchases.
-- `tab_cloaking_enabled` — tab title swap, favicon swap, presets (Google Docs / Classroom / Drive / blank), per-account preference.
-- `code_renaming_enabled` — neutralizes overt game references via centralized string map.
-- `beta_games_enabled` — gates exclusive shop-locked games.
+## Phase 3 — Chat upgrade
+- Username + avatar rendered per message; own messages right-aligned, others left-aligned (iMessage-style).
+- Image / GIF upload via `chat_uploads` + Supabase storage bucket `chat-media` (new).
+- Anti-spam: cooldown (3s), rate limit (10 msg/min), max length, basic profanity filter (server-side word list).
+- Report button → inserts into `chat_reports`, surfaced in admin moderation tab.
+- 24h auto-delete via `pg_cron` job calling a cleanup function.
+- Mute enforcement via `accounts.muted_until`.
 
-Flip `shop_enabled` + `cosmetics_enabled` + `tab_cloaking_enabled` tomorrow → publish a paired update note from the Update Notes tab → users see the modal and the new features at the same time. No redeploy.
+## Phase 4 — Economy, polls, packs, gambling
+- **Points & streaks**: award on chat/poll/play; daily streak bonus; multiplier applied. Persist in `point_transactions` (exists).
+- **Leaderboard**: top 20 by points (weekly + all-time).
+- **Polls**: rewards on vote, archive view, auto-rotate weekly from `weekly_poll_templates`.
+- **Shop**: cosmetics (avatars, name colors, chat badges) priced in points; purchases land in `accounts.inventory`.
+- **Gambling** (already scaffolded): coinflip, slots, dice, jackpot — wire to point_transactions, add house edge limits and per-day loss cap.
+- **Packs** (already scaffolded): rarities (common→legendary), seasonal packs, dupe → points refund, opening animation.
 
----
-
-## Phase 3 (later) — Gambling + Stocks
-Coinflip, dice, slots, jackpot. Stone-weighted soft limits (house edge ramps above thresholds; max 25% of balance per bet). 200-message gate. Admin-manipulable stock market (set price, trigger crash/boom, schedule volatility). Daily loss cap. Behind `gambling_enabled` flag.
-
-## Phase 4 (later) — Blooket-style Packs + Front-Page Overhaul
-Pack rarities, opening animations, collectible cube avatars, dust/reroll, animated rares. Front page: featured events, active users, trending packs, announcements banner, chat/profile previews, motion sections, mobile polish.
+## Phase 5 — Front page redesign + stealth features
+- New `MathHome` hero with modern design (you pick the direction — see next message).
+- Logged-in homepage variant: featured event, online users count, trending packs, latest announcement, recent chat preview, profile/progression card.
+- **CTRL+SHIFT+G** toggle: jump between math view and games view from anywhere.
+- **Tab cloaking**: settings panel to swap document title + favicon (Google Docs, Khan Academy, Classroom presets + custom).
+- Strip remaining "game/play" wording from public surfaces.
 
 ---
 
 ## Technical notes
 
-**New / changed tables**
-```text
-accounts, permissions, account_permissions,
-quests, quest_progress,
-point_multipliers, point_transactions,
-announcements, announcement_acks,
-update_logs, update_log_acks,
-chat_reports, weekly_poll_templates,
-feature_flags, audit_logs
-```
-- Existing tables get `account_id` column (backfilled from `code_id`); `access_codes` retained for migration period.
-- All RLS stays "no direct access" — every mutation via `game-api` edge function with token validation.
-- Extensions: `pgcrypto` (bcrypt), `pg_cron` + `pg_net` (24h chat purge, daily/weekly quest rotation, poll rotation, multiplier checks).
-- Storage bucket `chat-uploads` (5MB, image/* + gif, write via edge function only).
-
-**Frontend**
-- New: `AuthScreen`, `AnnouncementModal`, `UpdateNoteModal`, `WhatsNewPanel`, `QuestsPanel`, `LeaderboardPanel`, `ProfilePanel`, upgraded `ChatPanel`.
-- Phase-2 flag-gated: `ShopPanel`, `InventoryPanel`, `CosmeticsPicker`, `TabCloakSettings`.
-- Admin: `AccountsAdmin`, `QuestsAdmin`, `AnnouncementsAdmin`, `UpdateNotesAdmin`, `ReportsAdmin`, `FeatureFlagsAdmin`.
-- Hooks: `useGlobalShortcut`, `useFeatureFlag`, `useUnreadUpdateNotes`.
+- **Storage**: new bucket `chat-media` (private; signed URLs); RLS allows insert by owner-of-session, read for everyone authenticated via signed URLs from edge function.
+- **Cron**: `pg_cron` + `pg_net` for chat cleanup and weekly poll rotation.
+- **All writes** continue to flow through `game-api` edge function (header-auth `x-session-token`) to preserve the existing security model.
+- **No new public RLS** beyond what's already approved; tables stay locked, edge function is the gate.
+- **Permission keys**: `chat.moderate`, `users.manage`, `economy.manage`, `polls.manage`, `packs.manage`, `flags.manage`, `multipliers.manage`, `audit.view`. Admins implicitly hold all.
 
 ---
 
-Approve and I'll build Phase 1 + dark-shipped Phase 2 together.
+## What I need from you before I start
+
+1. **Confirm phase order** above, or tell me to reprioritize (e.g. "do chat upgrade first").
+2. **Front page direction**: after Phase 1–4 are done, I'll send a separate question with 3 rendered design options for the homepage. Or, if you'd rather do the redesign first, say so.
+3. **Tab cloak presets**: any specific ones you want beyond Google Docs / Classroom / Khan Academy?
+4. **Gambling limits**: any per-day loss cap you want, or leave it uncapped?
+
+Reply with "go" to start Phase 1, or with adjustments.
