@@ -5,6 +5,7 @@ import { supabase } from '../integrations/supabase/client';
 import { FeedbackWidget } from './FeedbackWidget';
 import { ChatPanel } from './ChatPanel';
 import { PollsPanel } from './PollsPanel';
+import { ProfilePanel } from './ProfilePanel';
 import { useActivityTracker } from '../lib/useActivityTracker';
 
 interface GamePortalProps {
