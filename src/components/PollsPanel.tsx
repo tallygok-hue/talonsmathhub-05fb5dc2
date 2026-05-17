@@ -22,11 +22,9 @@ export function PollsPanel() {
   useEffect(() => { load(); }, [load]);
 
   useEffect(() => {
-    const ch = supabase.channel('polls-watch')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'polls' }, () => load())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'poll_votes' }, () => load())
-      .subscribe();
-    return () => { supabase.removeChannel(ch); };
+    // poll_votes/polls no longer have public SELECT; poll periodically instead.
+    const id = setInterval(() => { load(); }, 5000);
+    return () => clearInterval(id);
   }, [load]);
 
   const vote = async (pollId: string, idx: number) => {

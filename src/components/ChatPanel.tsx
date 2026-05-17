@@ -25,25 +25,24 @@ export function ChatPanel({ username, isAdmin }: Props) {
 
   const refresh = useCallback(async () => {
     const r = await apiGetChat();
-    if (r?.messages) setMessages(r.messages);
-  }, []);
+    if (r?.messages) {
+      setMessages(prev => {
+        if (!open && r.messages.length > prev.length) {
+          const added = r.messages.slice(prev.length).filter((m: ChatMsg) => m.username !== username).length;
+          if (added > 0) setUnread(u => u + added);
+        }
+        return r.messages;
+      });
+    }
+  }, [open, username]);
 
   useEffect(() => { refresh(); }, [refresh]);
 
   useEffect(() => {
-    const ch = supabase.channel('chat-room')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_messages' }, (payload) => {
-        const m = payload.new as ChatMsg;
-        setMessages(prev => [...prev, m].slice(-100));
-        if (!open && m.username !== username) setUnread(u => u + 1);
-      })
-      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'chat_messages' }, (payload) => {
-        const old = payload.old as { id: string };
-        setMessages(prev => prev.filter(m => m.id !== old.id));
-      })
-      .subscribe();
-    return () => { supabase.removeChannel(ch); };
-  }, [open, username]);
+    // Realtime is disabled for chat_messages (no public SELECT). Poll every 3s instead.
+    const id = setInterval(() => { refresh(); }, 3000);
+    return () => clearInterval(id);
+  }, [refresh]);
 
   useEffect(() => {
     if (open) {

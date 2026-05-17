@@ -2,7 +2,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-session-token',
 }
 const json = (data: unknown, status = 200) =>
   new Response(JSON.stringify(data), { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
@@ -44,6 +44,10 @@ Deno.serve(async (req) => {
   try {
     const url = new URL(req.url)
     const action = url.searchParams.get('action') || ''
+    // Prefer header-supplied session token; fall back to query string only for sendBeacon-style requests.
+    const headerToken = req.headers.get('x-session-token')
+    const tokenFromUrl = url.searchParams.get('token')
+    const getToken = (bodyToken?: string | null) => headerToken || bodyToken || tokenFromUrl || null
 
     // ============================================================
     // SESSION HELPERS
@@ -160,7 +164,16 @@ Deno.serve(async (req) => {
       const password = String(body.code || body.password || '')  // legacy: "code" was the secret
       const deviceHash = body.deviceHash || null
       const userAgent = (req.headers.get('user-agent') || '').substring(0, 200)
-      const ip = req.headers.get('x-forwarded-for') || 'unknown'
+      const ip = (req.headers.get('x-forwarded-for') || 'unknown').split(',')[0].trim()
+
+      // IP-based rate limit: max 10 failed attempts in 10 minutes
+      const windowStart = new Date(Date.now() - 10 * 60_000).toISOString()
+      const { count: failed } = await supabase.from('login_attempts')
+        .select('id', { count: 'exact', head: true })
+        .eq('ip', ip).eq('success', false).gte('created_at', windowStart)
+      if ((failed ?? 0) >= 10) {
+        return json({ success: false, message: 'Too many failed attempts. Try again later.' }, 429)
+      }
 
       // device ban check
       if (deviceHash) {
@@ -199,6 +212,7 @@ Deno.serve(async (req) => {
         success: !!account,
         ip, user_agent: userAgent, device_hash: deviceHash,
       })
+      await supabase.from('login_attempts').insert({ ip, success: !!account })
 
       if (!account) return json({ success: false, message: 'Invalid login. Check username and password.' })
       if (account.banned) return json({ success: false, message: 'Account banned.' })
@@ -250,7 +264,7 @@ Deno.serve(async (req) => {
     // ============================================================
     if (action === 'setUsername') {
       const body = await req.json()
-      const s = await requireSession(body.token)
+      const s = await requireSession(getToken(body.token))
       if (!s) return json({ error: 'Unauthorized' }, 403)
       const username = String(body.username || '').trim()
       if (!USERNAME_RE.test(username)) return json({ success: false, message: 'Username must be 3-20 letters, numbers, _ . -' })
@@ -267,7 +281,7 @@ Deno.serve(async (req) => {
     // VALIDATE / LOGOUT (kept compatible)
     // ============================================================
     if (action === 'validate') {
-      const token = url.searchParams.get('token')
+      const token = getToken()
       const s = await getSession(token)
       if (!s) return json({ valid: false })
       if (s.device_hash) {
@@ -290,7 +304,7 @@ Deno.serve(async (req) => {
     }
 
     if (action === 'logout') {
-      let token = url.searchParams.get('token')
+      let token = getToken()
       if (!token) { try { const b = await req.json(); token = b?.token } catch {} }
       if (token) await supabase.from('active_sessions').delete().eq('session_token', token)
       return json({ success: true })
@@ -300,7 +314,7 @@ Deno.serve(async (req) => {
     // PROFILE / ACCOUNT
     // ============================================================
     if (action === 'me') {
-      const s = await getSession(url.searchParams.get('token'))
+      const s = await getSession(getToken())
       if (!s) return json({ error: 'Unauthorized' }, 403)
       const accountId = s.account_id || s.code_id
       const [{ data: acc }, { data: perms }, { data: txs }] = await Promise.all([
@@ -344,7 +358,7 @@ Deno.serve(async (req) => {
     // QUESTS
     // ============================================================
     if (action === 'getQuests') {
-      const s = await requireSession(url.searchParams.get('token'))
+      const s = await requireSession(getToken())
       if (!s) return json({ error: 'Unauthorized' }, 403)
       const accountId = s.account_id || s.code_id
       const { data: quests } = await supabase.from('quests').select('*').eq('active', true).order('quest_type').order('reward')
@@ -371,7 +385,7 @@ Deno.serve(async (req) => {
     // UPDATE NOTES
     // ============================================================
     if (action === 'getUpdateLogs') {
-      const s = await getSession(url.searchParams.get('token'))
+      const s = await getSession(getToken())
       if (!s) return json({ error: 'Unauthorized' }, 403)
       const accountId = s.account_id || s.code_id
       const isAdmin = s.account.role === 'admin'
@@ -387,7 +401,7 @@ Deno.serve(async (req) => {
 
     if (action === 'ackUpdateLog') {
       const body = await req.json()
-      const s = await requireSession(body.token)
+      const s = await requireSession(getToken(body.token))
       if (!s) return json({ error: 'Unauthorized' }, 403)
       const accountId = s.account_id || s.code_id
       await supabase.from('update_log_acks').upsert({
@@ -398,7 +412,7 @@ Deno.serve(async (req) => {
 
     if (action === 'createUpdateLog') {
       const body = await req.json()
-      const s = await requireAdmin(body.token)
+      const s = await requireAdmin(getToken(body.token))
       if (!s) return json({ error: 'Unauthorized' }, 403)
       const { data, error } = await supabase.from('update_logs').insert({
         version: String(body.version || '').slice(0, 30),
@@ -420,7 +434,7 @@ Deno.serve(async (req) => {
 
     if (action === 'deleteUpdateLog') {
       const body = await req.json()
-      const s = await requireAdmin(body.token)
+      const s = await requireAdmin(getToken(body.token))
       if (!s) return json({ error: 'Unauthorized' }, 403)
       await supabase.from('update_logs').delete().eq('id', body.updateLogId)
       return json({ success: true })
@@ -430,7 +444,7 @@ Deno.serve(async (req) => {
     // ANNOUNCEMENTS
     // ============================================================
     if (action === 'getAnnouncements') {
-      const s = await getSession(url.searchParams.get('token'))
+      const s = await getSession(getToken())
       if (!s) return json({ error: 'Unauthorized' }, 403)
       const accountId = s.account_id || s.code_id
       const isAdmin = s.account.role === 'admin'
@@ -442,7 +456,7 @@ Deno.serve(async (req) => {
     }
     if (action === 'ackAnnouncement') {
       const body = await req.json()
-      const s = await requireSession(body.token)
+      const s = await requireSession(getToken(body.token))
       if (!s) return json({ error: 'Unauthorized' }, 403)
       const accountId = s.account_id || s.code_id
       await supabase.from('announcement_acks').upsert({ account_id: accountId, announcement_id: body.announcementId }, { onConflict: 'account_id,announcement_id' })
@@ -450,7 +464,7 @@ Deno.serve(async (req) => {
     }
     if (action === 'createAnnouncement') {
       const body = await req.json()
-      const s = await requireAdmin(body.token)
+      const s = await requireAdmin(getToken(body.token))
       if (!s) return json({ error: 'Unauthorized' }, 403)
       const { data, error } = await supabase.from('announcements').insert({
         title: String(body.title || '').slice(0, 200),
@@ -466,13 +480,13 @@ Deno.serve(async (req) => {
     }
     if (action === 'deleteAnnouncement') {
       const body = await req.json()
-      const s = await requireAdmin(body.token)
+      const s = await requireAdmin(getToken(body.token))
       if (!s) return json({ error: 'Unauthorized' }, 403)
       await supabase.from('announcements').delete().eq('id', body.id)
       return json({ success: true })
     }
     if (action === 'getAllAnnouncements') {
-      const s = await requireAdmin(url.searchParams.get('token'))
+      const s = await requireAdmin(getToken())
       if (!s) return json({ error: 'Unauthorized' }, 403)
       const { data } = await supabase.from('announcements').select('*').order('created_at', { ascending: false })
       return json({ announcements: data || [] })
@@ -483,7 +497,7 @@ Deno.serve(async (req) => {
     // ============================================================
     if (action === 'setFlag') {
       const body = await req.json()
-      const s = await requireAdmin(body.token)
+      const s = await requireAdmin(getToken(body.token))
       if (!s) return json({ error: 'Unauthorized' }, 403)
       await supabase.from('feature_flags').update({
         enabled: !!body.enabled,
@@ -502,7 +516,7 @@ Deno.serve(async (req) => {
     // ACCOUNTS (admin)
     // ============================================================
     if (action === 'getAccounts') {
-      const s = await requireAdmin(url.searchParams.get('token'))
+      const s = await requireAdmin(getToken())
       if (!s) return json({ error: 'Unauthorized' }, 403)
       const { data } = await supabase.from('accounts')
         .select('id, username, role, banned, muted_until, points, total_earned, chat_count, streak_days, last_login_at, created_at, must_set_username')
@@ -514,7 +528,7 @@ Deno.serve(async (req) => {
     }
     if (action === 'adminUpdateAccount') {
       const body = await req.json()
-      const s = await requireAdmin(body.token)
+      const s = await requireAdmin(getToken(body.token))
       if (!s) return json({ error: 'Unauthorized' }, 403)
       const updates: any = {}
       if (body.role !== undefined) updates.role = body.role === 'admin' ? 'admin' : 'user'
@@ -532,7 +546,7 @@ Deno.serve(async (req) => {
     }
     if (action === 'adminGrantPerm') {
       const body = await req.json()
-      const s = await requireAdmin(body.token)
+      const s = await requireAdmin(getToken(body.token))
       if (!s) return json({ error: 'Unauthorized' }, 403)
       await supabase.from('account_permissions').upsert({
         account_id: body.accountId, permission_key: body.permKey, granted_by: s.account_id || s.code_id,
@@ -541,14 +555,14 @@ Deno.serve(async (req) => {
     }
     if (action === 'adminRevokePerm') {
       const body = await req.json()
-      const s = await requireAdmin(body.token)
+      const s = await requireAdmin(getToken(body.token))
       if (!s) return json({ error: 'Unauthorized' }, 403)
       await supabase.from('account_permissions').delete().eq('account_id', body.accountId).eq('permission_key', body.permKey)
       return json({ success: true })
     }
     if (action === 'adminAdjustPoints') {
       const body = await req.json()
-      const s = await requireAdmin(body.token)
+      const s = await requireAdmin(getToken(body.token))
       if (!s) return json({ error: 'Unauthorized' }, 403)
       const delta = Math.floor(Number(body.amount) || 0)
       const { data: acc } = await supabase.from('accounts').select('points, total_earned').eq('id', body.accountId).maybeSingle()
@@ -563,7 +577,7 @@ Deno.serve(async (req) => {
       return json({ success: true, points: newPoints })
     }
     if (action === 'getPermissions') {
-      const s = await requireAdmin(url.searchParams.get('token'))
+      const s = await requireAdmin(getToken())
       if (!s) return json({ error: 'Unauthorized' }, 403)
       const { data } = await supabase.from('permissions').select('*').order('key')
       return json({ permissions: data || [] })
@@ -573,14 +587,14 @@ Deno.serve(async (req) => {
     // MULTIPLIERS (admin)
     // ============================================================
     if (action === 'getMultipliers') {
-      const s = await requireAdmin(url.searchParams.get('token'))
+      const s = await requireAdmin(getToken())
       if (!s) return json({ error: 'Unauthorized' }, 403)
       const { data } = await supabase.from('point_multipliers').select('*').order('created_at', { ascending: false })
       return json({ multipliers: data || [] })
     }
     if (action === 'createMultiplier') {
       const body = await req.json()
-      const s = await requireAdmin(body.token)
+      const s = await requireAdmin(getToken(body.token))
       if (!s) return json({ error: 'Unauthorized' }, 403)
       const { data, error } = await supabase.from('point_multipliers').insert({
         name: String(body.name || 'Bonus').slice(0, 100),
@@ -594,7 +608,7 @@ Deno.serve(async (req) => {
     }
     if (action === 'endMultiplier') {
       const body = await req.json()
-      const s = await requireAdmin(body.token)
+      const s = await requireAdmin(getToken(body.token))
       if (!s) return json({ error: 'Unauthorized' }, 403)
       await supabase.from('point_multipliers').update({ active: false, ends_at: new Date().toISOString() }).eq('id', body.multiplierId)
       return json({ success: true })
@@ -608,14 +622,14 @@ Deno.serve(async (req) => {
     // QUESTS (admin)
     // ============================================================
     if (action === 'adminGetQuests') {
-      const s = await requireAdmin(url.searchParams.get('token'))
+      const s = await requireAdmin(getToken())
       if (!s) return json({ error: 'Unauthorized' }, 403)
       const { data } = await supabase.from('quests').select('*').order('quest_type').order('reward')
       return json({ quests: data || [] })
     }
     if (action === 'adminCreateQuest') {
       const body = await req.json()
-      const s = await requireAdmin(body.token)
+      const s = await requireAdmin(getToken(body.token))
       if (!s) return json({ error: 'Unauthorized' }, 403)
       const { data, error } = await supabase.from('quests').insert({
         key: String(body.key || `quest_${Date.now()}`).slice(0, 60),
@@ -632,7 +646,7 @@ Deno.serve(async (req) => {
     }
     if (action === 'adminUpdateQuest') {
       const body = await req.json()
-      const s = await requireAdmin(body.token)
+      const s = await requireAdmin(getToken(body.token))
       if (!s) return json({ error: 'Unauthorized' }, 403)
       const updates: any = {}
       for (const k of ['title','description','goal','reward','active']) if (body[k] !== undefined) updates[k] = body[k]
@@ -641,7 +655,7 @@ Deno.serve(async (req) => {
     }
     if (action === 'adminDeleteQuest') {
       const body = await req.json()
-      const s = await requireAdmin(body.token)
+      const s = await requireAdmin(getToken(body.token))
       if (!s) return json({ error: 'Unauthorized' }, 403)
       await supabase.from('quests').delete().eq('id', body.questId)
       return json({ success: true })
@@ -659,7 +673,7 @@ Deno.serve(async (req) => {
     }
     if (action === 'sendChat') {
       const body = await req.json()
-      const s = await requireSession(body.token)
+      const s = await requireSession(getToken(body.token))
       if (!s) return json({ error: 'Unauthorized' }, 403)
       // Mute check
       if (s.account.muted_until && new Date(s.account.muted_until) > new Date()) {
@@ -704,14 +718,14 @@ Deno.serve(async (req) => {
     }
     if (action === 'deleteChat') {
       const body = await req.json()
-      const s = await requireAdmin(body.token)
+      const s = await requireAdmin(getToken(body.token))
       if (!s) return json({ error: 'Unauthorized' }, 403)
       await supabase.from('chat_messages').delete().eq('id', body.messageId)
       return json({ success: true })
     }
     if (action === 'reportChat') {
       const body = await req.json()
-      const s = await requireSession(body.token)
+      const s = await requireSession(getToken(body.token))
       if (!s) return json({ error: 'Unauthorized' }, 403)
       await supabase.from('chat_reports').insert({
         message_id: body.messageId, reporter_account_id: s.account_id || s.code_id, reason: String(body.reason || '').slice(0, 300),
@@ -719,7 +733,7 @@ Deno.serve(async (req) => {
       return json({ success: true })
     }
     if (action === 'getReports') {
-      const s = await requireAdmin(url.searchParams.get('token'))
+      const s = await requireAdmin(getToken())
       if (!s) return json({ error: 'Unauthorized' }, 403)
       const { data: reports } = await supabase.from('chat_reports').select('*').eq('status', 'open').order('created_at', { ascending: false }).limit(100)
       const ids = [...new Set((reports || []).map((r: any) => r.message_id))]
@@ -731,7 +745,7 @@ Deno.serve(async (req) => {
     }
     if (action === 'resolveReport') {
       const body = await req.json()
-      const s = await requireAdmin(body.token)
+      const s = await requireAdmin(getToken(body.token))
       if (!s) return json({ error: 'Unauthorized' }, 403)
       await supabase.from('chat_reports').update({ status: 'resolved' }).eq('id', body.reportId)
       return json({ success: true })
@@ -742,9 +756,11 @@ Deno.serve(async (req) => {
     // sessions, codes, bans, screens, analytics)
     // ============================================================
     if (action === 'toggleFav') {
-      const body = await req.json()
-      const accId = body.codeId
-      if (!accId || !body.gameId) return json({ error: 'Missing fields' }, 400)
+      const body = await req.json().catch(() => ({}))
+      const s = await requireSession(getToken(body.token))
+      if (!s) return json({ error: 'Unauthorized' }, 403)
+      const accId = s.account_id || s.code_id
+      if (!body.gameId) return json({ error: 'Missing fields' }, 400)
       const { data: existing } = await supabase.from('code_favorites').select('id').eq('account_id', accId).eq('game_id', body.gameId).maybeSingle()
       if (existing) {
         await supabase.from('code_favorites').delete().eq('id', existing.id)
@@ -754,15 +770,18 @@ Deno.serve(async (req) => {
       return json({ favorited: true })
     }
     if (action === 'getFavs') {
-      const accId = url.searchParams.get('codeId')
-      if (!accId) return json({ error: 'Missing codeId' }, 400)
+      const s = await requireSession(getToken())
+      if (!s) return json({ error: 'Unauthorized' }, 403)
+      const accId = s.account_id || s.code_id
       const { data } = await supabase.from('code_favorites').select('game_id').eq('account_id', accId)
       return json({ favorites: (data || []).map((f: any) => f.game_id) })
     }
     if (action === 'saveProgress') {
-      const body = await req.json()
-      const accId = body.codeId
-      if (!accId || !body.progressType) return json({ error: 'Missing fields' }, 400)
+      const body = await req.json().catch(() => ({}))
+      const s = await requireSession(getToken(body.token))
+      if (!s) return json({ error: 'Unauthorized' }, 403)
+      const accId = s.account_id || s.code_id
+      if (!body.progressType) return json({ error: 'Missing fields' }, 400)
       await supabase.from('code_progress').upsert(
         { code_id: accId, account_id: accId, progress_type: body.progressType, data: body.data, updated_at: new Date().toISOString() },
         { onConflict: 'code_id,progress_type' }
@@ -770,9 +789,11 @@ Deno.serve(async (req) => {
       return json({ success: true })
     }
     if (action === 'addRecent') {
-      const body = await req.json()
-      const accId = body.codeId
-      if (!accId || !body.game?.id) return json({ error: 'Missing fields' }, 400)
+      const body = await req.json().catch(() => ({}))
+      const s = await requireSession(getToken(body.token))
+      if (!s) return json({ error: 'Unauthorized' }, 403)
+      const accId = s.account_id || s.code_id
+      if (!body.game?.id) return json({ error: 'Missing fields' }, 400)
       const { data: row } = await supabase.from('code_progress').select('data').eq('account_id', accId).eq('progress_type', 'recent_games').maybeSingle()
       const list: any[] = Array.isArray((row as any)?.data?.list) ? (row as any).data.list : []
       const filtered = list.filter((g: any) => g.id !== body.game.id)
@@ -784,22 +805,23 @@ Deno.serve(async (req) => {
       return json({ success: true, recent: next })
     }
     if (action === 'getRecent') {
-      const accId = url.searchParams.get('codeId')
-      if (!accId) return json({ error: 'Missing codeId' }, 400)
+      const s = await requireSession(getToken())
+      if (!s) return json({ error: 'Unauthorized' }, 403)
+      const accId = s.account_id || s.code_id
       const { data } = await supabase.from('code_progress').select('data').eq('account_id', accId).eq('progress_type', 'recent_games').maybeSingle()
       return json({ recent: (data as any)?.data?.list || [] })
     }
 
     // legacy admin code helpers — stay compatible
     if (action === 'getCodes') {
-      const s = await requireAdmin(url.searchParams.get('token'))
+      const s = await requireAdmin(getToken())
       if (!s) return json({ error: 'Unauthorized' }, 403)
       const { data: codes } = await supabase.from('access_codes').select('id, code, is_admin, active, created_at').order('created_at')
       return json({ codes: codes || [] })
     }
     if (action === 'addCode') {
       const body = await req.json()
-      const s = await requireAdmin(body.token)
+      const s = await requireAdmin(getToken(body.token))
       if (!s) return json({ error: 'Unauthorized' }, 403)
       const code = body.code.toLowerCase().trim()
       const { data, error } = await supabase.from('access_codes').insert({ code, is_admin: body.isAdmin || false }).select().single()
@@ -813,7 +835,7 @@ Deno.serve(async (req) => {
     }
     if (action === 'removeCode') {
       const body = await req.json()
-      const s = await requireAdmin(body.token)
+      const s = await requireAdmin(getToken(body.token))
       if (!s) return json({ error: 'Unauthorized' }, 403)
       await supabase.from('active_sessions').delete().eq('code_id', body.codeId)
       await supabase.from('access_codes').update({ active: false }).eq('id', body.codeId)
@@ -822,14 +844,14 @@ Deno.serve(async (req) => {
     }
     if (action === 'activateCode') {
       const body = await req.json()
-      const s = await requireAdmin(body.token)
+      const s = await requireAdmin(getToken(body.token))
       if (!s) return json({ error: 'Unauthorized' }, 403)
       await supabase.from('access_codes').update({ active: true }).eq('id', body.codeId)
       await supabase.from('accounts').update({ banned: false }).eq('id', body.codeId)
       return json({ success: true })
     }
     if (action === 'getSessions') {
-      const s = await requireAdmin(url.searchParams.get('token'))
+      const s = await requireAdmin(getToken())
       if (!s) return json({ error: 'Unauthorized' }, 403)
       const { data } = await supabase.from('active_sessions')
         .select('id, username, is_admin, created_at, last_active, code_id, account_id, device_hash, session_token, current_view, current_game, current_url')
@@ -838,20 +860,20 @@ Deno.serve(async (req) => {
     }
     if (action === 'endSession') {
       const body = await req.json()
-      const s = await requireAdmin(body.token)
+      const s = await requireAdmin(getToken(body.token))
       if (!s) return json({ error: 'Unauthorized' }, 403)
       await supabase.from('active_sessions').delete().eq('id', body.sessionId)
       return json({ success: true })
     }
     if (action === 'getLogs') {
-      const s = await requireAdmin(url.searchParams.get('token'))
+      const s = await requireAdmin(getToken())
       if (!s) return json({ error: 'Unauthorized' }, 403)
       const { data } = await supabase.from('login_logs').select('*').order('created_at', { ascending: false }).limit(500)
       return json({ logs: data || [] })
     }
     if (action === 'changeAdminCode') {
       const body = await req.json()
-      const s = await requireAdmin(body.token)
+      const s = await requireAdmin(getToken(body.token))
       if (!s) return json({ error: 'Unauthorized' }, 403)
       const newCode = String(body.newCode).trim()
       await supabase.from('access_codes').update({ code: newCode }).eq('id', body.oldCodeId)
@@ -862,7 +884,7 @@ Deno.serve(async (req) => {
 
     if (action === 'banDevice') {
       const body = await req.json()
-      const s = await requireAdmin(body.token)
+      const s = await requireAdmin(getToken(body.token))
       if (!s) return json({ error: 'Unauthorized' }, 403)
       if (!body.deviceHash) return json({ error: 'Missing deviceHash' }, 400)
       await supabase.from('banned_devices').upsert({
@@ -874,27 +896,31 @@ Deno.serve(async (req) => {
     }
     if (action === 'unbanDevice') {
       const body = await req.json()
-      const s = await requireAdmin(body.token)
+      const s = await requireAdmin(getToken(body.token))
       if (!s) return json({ error: 'Unauthorized' }, 403)
       await supabase.from('banned_devices').delete().eq('device_hash', body.deviceHash)
       return json({ success: true })
     }
     if (action === 'getBannedDevices') {
-      const s = await requireAdmin(url.searchParams.get('token'))
+      const s = await requireAdmin(getToken())
       if (!s) return json({ error: 'Unauthorized' }, 403)
       const { data } = await supabase.from('banned_devices').select('*').order('created_at', { ascending: false })
       return json({ banned: data || [] })
     }
     if (action === 'getCodeAccount') {
-      const s = await requireAdmin(url.searchParams.get('token'))
+      const s = await requireAdmin(getToken())
       if (!s) return json({ error: 'Unauthorized' }, 403)
       const codeId = url.searchParams.get('codeId')
       if (!codeId) return json({ error: 'Missing codeId' }, 400)
+      const { data: acct } = await supabase.from('accounts').select('username').eq('id', codeId).maybeSingle()
+      const acctUsername = acct?.username || null
       const [favs, progress, sessions, logs] = await Promise.all([
         supabase.from('code_favorites').select('game_id, created_at').eq('account_id', codeId),
         supabase.from('code_progress').select('progress_type, data').eq('account_id', codeId),
         supabase.from('active_sessions').select('username, created_at, last_active, device_hash').eq('account_id', codeId),
-        supabase.from('login_logs').select('username, created_at, success, device_hash').order('created_at', { ascending: false }).limit(50),
+        acctUsername
+          ? supabase.from('login_logs').select('username, created_at, success, device_hash').eq('username', acctUsername).order('created_at', { ascending: false }).limit(50)
+          : Promise.resolve({ data: [] as any }),
       ])
       const recent = (progress.data || []).find((p: any) => p.progress_type === 'recent_games')?.data?.list || []
       return json({ favorites: (favs.data || []).map((f: any) => f.game_id), recent, sessions: sessions.data || [], recentLogs: logs.data || [] })
@@ -903,7 +929,7 @@ Deno.serve(async (req) => {
     // requests (kept compatible — uses account_id mirror)
     if (action === 'submitRequest') {
       const body = await req.json()
-      const s = await requireSession(body.token)
+      const s = await requireSession(getToken(body.token))
       if (!s) return json({ error: 'Unauthorized' }, 403)
       const message = String(body.message || '').trim()
       if (!message || message.length > 2000) return json({ error: 'Message must be 1-2000 characters' }, 400)
@@ -916,7 +942,7 @@ Deno.serve(async (req) => {
       return json({ success: true, request: data })
     }
     if (action === 'getMyRequests') {
-      const s = await requireSession(url.searchParams.get('token'))
+      const s = await requireSession(getToken())
       if (!s) return json({ error: 'Unauthorized' }, 403)
       const accId = s.account_id || s.code_id
       const { data } = await supabase.from('user_requests').select('*').eq('account_id', accId).order('created_at', { ascending: false }).limit(100)
@@ -924,13 +950,13 @@ Deno.serve(async (req) => {
     }
     if (action === 'markNotified') {
       const body = await req.json()
-      const s = await requireSession(body.token)
+      const s = await requireSession(getToken(body.token))
       if (!s) return json({ error: 'Unauthorized' }, 403)
       await supabase.from('user_requests').update({ notified: true }).eq('id', body.requestId).eq('account_id', s.account_id || s.code_id)
       return json({ success: true })
     }
     if (action === 'getAllRequests') {
-      const s = await requireAdmin(url.searchParams.get('token'))
+      const s = await requireAdmin(getToken())
       if (!s) return json({ error: 'Unauthorized' }, 403)
       const { data } = await supabase.from('user_requests').select('*').order('created_at', { ascending: false }).limit(500)
       return json({ requests: data || [] })
@@ -938,7 +964,7 @@ Deno.serve(async (req) => {
     if (action === 'respondRequest') {
       const body = await req.json()
       if (!['accepted','denied','pending'].includes(body.status)) return json({ error: 'Invalid status' }, 400)
-      const s = await requireAdmin(body.token)
+      const s = await requireAdmin(getToken(body.token))
       if (!s) return json({ error: 'Unauthorized' }, 403)
       await supabase.from('user_requests').update({
         status: body.status, admin_response: body.response || null, responded_at: new Date().toISOString(), notified: false,
@@ -947,7 +973,7 @@ Deno.serve(async (req) => {
     }
     if (action === 'deleteRequest') {
       const body = await req.json()
-      const s = await requireAdmin(body.token)
+      const s = await requireAdmin(getToken(body.token))
       if (!s) return json({ error: 'Unauthorized' }, 403)
       await supabase.from('user_requests').delete().eq('id', body.requestId)
       return json({ success: true })
@@ -956,7 +982,7 @@ Deno.serve(async (req) => {
     // activity
     if (action === 'updateActivity') {
       const body = await req.json()
-      const s = await requireSession(body.token)
+      const s = await requireSession(getToken(body.token))
       if (!s) return json({ error: 'Unauthorized' }, 403)
       await supabase.from('active_sessions').update({
         current_view: body.view || null, current_game: body.game || null, current_url: body.url || null,
@@ -966,7 +992,7 @@ Deno.serve(async (req) => {
     }
     if (action === 'uploadScreen') {
       const body = await req.json()
-      const s = await requireSession(body.token)
+      const s = await requireSession(getToken(body.token))
       if (!s) return json({ error: 'Unauthorized' }, 403)
       if (!body.screenshot || typeof body.screenshot !== 'string') return json({ error: 'No screenshot' }, 400)
       if (body.screenshot.length > 600_000) return json({ error: 'Too large' }, 400)
@@ -978,13 +1004,13 @@ Deno.serve(async (req) => {
       return json({ success: true })
     }
     if (action === 'getScreens') {
-      const s = await requireAdmin(url.searchParams.get('token'))
+      const s = await requireAdmin(getToken())
       if (!s) return json({ error: 'Unauthorized' }, 403)
       const { data } = await supabase.from('session_screens').select('session_token, code_id, account_id, username, width, height, updated_at').order('updated_at', { ascending: false })
       return json({ screens: data || [] })
     }
     if (action === 'getScreen') {
-      const s = await requireAdmin(url.searchParams.get('token'))
+      const s = await requireAdmin(getToken())
       if (!s) return json({ error: 'Unauthorized' }, 403)
       const tok = url.searchParams.get('sessionToken')
       if (!tok) return json({ error: 'Missing sessionToken' }, 400)
@@ -995,7 +1021,7 @@ Deno.serve(async (req) => {
     // analytics
     if (action === 'trackPlay') {
       const body = await req.json()
-      const s = await requireSession(body.token)
+      const s = await requireSession(getToken(body.token))
       if (!s) return json({ error: 'Unauthorized' }, 403)
       if (!body.gameId) return json({ error: 'Missing gameId' }, 400)
       const accId = s.account_id || s.code_id
@@ -1008,7 +1034,7 @@ Deno.serve(async (req) => {
       return json({ success: true })
     }
     if (action === 'gameAnalytics') {
-      const s = await requireAdmin(url.searchParams.get('token'))
+      const s = await requireAdmin(getToken())
       if (!s) return json({ error: 'Unauthorized' }, 403)
       const days = Math.min(parseInt(url.searchParams.get('days') || '7'), 90)
       const since = new Date(Date.now() - days * 86400_000).toISOString()
@@ -1028,7 +1054,7 @@ Deno.serve(async (req) => {
     if (action === 'getPolls') {
       const { data: polls } = await supabase.from('polls').select('*').order('created_at', { ascending: false }).limit(50)
       const { data: votes } = await supabase.from('poll_votes').select('poll_id, option_index, account_id, code_id')
-      const token = url.searchParams.get('token')
+      const token = getToken()
       let myAccId: string | null = null
       if (token) {
         const { data: sess } = await supabase.from('active_sessions').select('account_id, code_id').eq('session_token', token).maybeSingle()
@@ -1048,7 +1074,7 @@ Deno.serve(async (req) => {
     }
     if (action === 'createPoll') {
       const body = await req.json()
-      const s = await requireAdmin(body.token)
+      const s = await requireAdmin(getToken(body.token))
       if (!s) return json({ error: 'Unauthorized' }, 403)
       if (!body.question || !Array.isArray(body.options) || body.options.length < 2) return json({ error: 'Need question and at least 2 options' }, 400)
       const opts = body.options.map((o: any) => String(o).slice(0, 200)).slice(0, 10)
@@ -1060,21 +1086,21 @@ Deno.serve(async (req) => {
     }
     if (action === 'closePoll') {
       const body = await req.json()
-      const s = await requireAdmin(body.token)
+      const s = await requireAdmin(getToken(body.token))
       if (!s) return json({ error: 'Unauthorized' }, 403)
       await supabase.from('polls').update({ active: false }).eq('id', body.pollId)
       return json({ success: true })
     }
     if (action === 'deletePoll') {
       const body = await req.json()
-      const s = await requireAdmin(body.token)
+      const s = await requireAdmin(getToken(body.token))
       if (!s) return json({ error: 'Unauthorized' }, 403)
       await supabase.from('polls').delete().eq('id', body.pollId)
       return json({ success: true })
     }
     if (action === 'votePoll') {
       const body = await req.json()
-      const s = await requireSession(body.token)
+      const s = await requireSession(getToken(body.token))
       if (!s) return json({ error: 'Unauthorized' }, 403)
       const { data: poll } = await supabase.from('polls').select('id, options, active').eq('id', body.pollId).maybeSingle()
       if (!poll || !poll.active) return json({ error: 'Poll closed' }, 400)
@@ -1092,6 +1118,7 @@ Deno.serve(async (req) => {
 
     return json({ error: 'Unknown action' }, 400)
   } catch (err) {
-    return json({ error: String(err) }, 500)
+    console.error('game-api error:', err)
+    return json({ error: 'Internal server error' }, 500)
   }
 })
