@@ -31,19 +31,10 @@ export function ChatPanel({ username, isAdmin }: Props) {
   useEffect(() => { refresh(); }, [refresh]);
 
   useEffect(() => {
-    const ch = supabase.channel('chat-room')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_messages' }, (payload) => {
-        const m = payload.new as ChatMsg;
-        setMessages(prev => [...prev, m].slice(-100));
-        if (!open && m.username !== username) setUnread(u => u + 1);
-      })
-      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'chat_messages' }, (payload) => {
-        const old = payload.old as { id: string };
-        setMessages(prev => prev.filter(m => m.id !== old.id));
-      })
-      .subscribe();
-    return () => { supabase.removeChannel(ch); };
-  }, [open, username]);
+    // Realtime is disabled for chat_messages (no public SELECT). Poll every 3s instead.
+    const id = setInterval(() => { refresh(); }, 3000);
+    return () => clearInterval(id);
+  }, [refresh]);
 
   useEffect(() => {
     if (open) {
