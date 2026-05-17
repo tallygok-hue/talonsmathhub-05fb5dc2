@@ -756,9 +756,11 @@ Deno.serve(async (req) => {
     // sessions, codes, bans, screens, analytics)
     // ============================================================
     if (action === 'toggleFav') {
-      const body = await req.json()
-      const accId = body.codeId
-      if (!accId || !body.gameId) return json({ error: 'Missing fields' }, 400)
+      const body = await req.json().catch(() => ({}))
+      const s = await requireSession(getToken(body.token))
+      if (!s) return json({ error: 'Unauthorized' }, 403)
+      const accId = s.account_id || s.code_id
+      if (!body.gameId) return json({ error: 'Missing fields' }, 400)
       const { data: existing } = await supabase.from('code_favorites').select('id').eq('account_id', accId).eq('game_id', body.gameId).maybeSingle()
       if (existing) {
         await supabase.from('code_favorites').delete().eq('id', existing.id)
@@ -768,15 +770,18 @@ Deno.serve(async (req) => {
       return json({ favorited: true })
     }
     if (action === 'getFavs') {
-      const accId = url.searchParams.get('codeId')
-      if (!accId) return json({ error: 'Missing codeId' }, 400)
+      const s = await requireSession(getToken())
+      if (!s) return json({ error: 'Unauthorized' }, 403)
+      const accId = s.account_id || s.code_id
       const { data } = await supabase.from('code_favorites').select('game_id').eq('account_id', accId)
       return json({ favorites: (data || []).map((f: any) => f.game_id) })
     }
     if (action === 'saveProgress') {
-      const body = await req.json()
-      const accId = body.codeId
-      if (!accId || !body.progressType) return json({ error: 'Missing fields' }, 400)
+      const body = await req.json().catch(() => ({}))
+      const s = await requireSession(getToken(body.token))
+      if (!s) return json({ error: 'Unauthorized' }, 403)
+      const accId = s.account_id || s.code_id
+      if (!body.progressType) return json({ error: 'Missing fields' }, 400)
       await supabase.from('code_progress').upsert(
         { code_id: accId, account_id: accId, progress_type: body.progressType, data: body.data, updated_at: new Date().toISOString() },
         { onConflict: 'code_id,progress_type' }
@@ -784,9 +789,11 @@ Deno.serve(async (req) => {
       return json({ success: true })
     }
     if (action === 'addRecent') {
-      const body = await req.json()
-      const accId = body.codeId
-      if (!accId || !body.game?.id) return json({ error: 'Missing fields' }, 400)
+      const body = await req.json().catch(() => ({}))
+      const s = await requireSession(getToken(body.token))
+      if (!s) return json({ error: 'Unauthorized' }, 403)
+      const accId = s.account_id || s.code_id
+      if (!body.game?.id) return json({ error: 'Missing fields' }, 400)
       const { data: row } = await supabase.from('code_progress').select('data').eq('account_id', accId).eq('progress_type', 'recent_games').maybeSingle()
       const list: any[] = Array.isArray((row as any)?.data?.list) ? (row as any).data.list : []
       const filtered = list.filter((g: any) => g.id !== body.game.id)
@@ -798,8 +805,9 @@ Deno.serve(async (req) => {
       return json({ success: true, recent: next })
     }
     if (action === 'getRecent') {
-      const accId = url.searchParams.get('codeId')
-      if (!accId) return json({ error: 'Missing codeId' }, 400)
+      const s = await requireSession(getToken())
+      if (!s) return json({ error: 'Unauthorized' }, 403)
+      const accId = s.account_id || s.code_id
       const { data } = await supabase.from('code_progress').select('data').eq('account_id', accId).eq('progress_type', 'recent_games').maybeSingle()
       return json({ recent: (data as any)?.data?.list || [] })
     }
