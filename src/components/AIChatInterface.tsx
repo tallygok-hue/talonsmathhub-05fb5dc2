@@ -211,11 +211,13 @@ export function AIChatInterface({ onBack }: { onBack: () => void }) {
     setIsLoading(true);
 
     try {
+      const sessionToken = sessionStorage.getItem("tmh_session_token") || "";
       const resp = await fetch(CHAT_URL, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          "x-session-token": sessionToken,
         },
         body: JSON.stringify({ messages: newMessages, model }),
       });
