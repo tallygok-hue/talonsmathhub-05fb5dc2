@@ -25,8 +25,16 @@ export function ChatPanel({ username, isAdmin }: Props) {
 
   const refresh = useCallback(async () => {
     const r = await apiGetChat();
-    if (r?.messages) setMessages(r.messages);
-  }, []);
+    if (r?.messages) {
+      setMessages(prev => {
+        if (!open && r.messages.length > prev.length) {
+          const added = r.messages.slice(prev.length).filter((m: ChatMsg) => m.username !== username).length;
+          if (added > 0) setUnread(u => u + added);
+        }
+        return r.messages;
+      });
+    }
+  }, [open, username]);
 
   useEffect(() => { refresh(); }, [refresh]);
 
