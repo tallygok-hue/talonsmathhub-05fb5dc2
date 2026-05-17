@@ -266,6 +266,7 @@ export function GamePortal({ username, isAdmin, onLogout, onAdminPanel }: GamePo
       </div>
       <FeedbackWidget />
       <ChatPanel username={username} isAdmin={isAdmin} />
+      {profileOpen && <ProfilePanel onClose={() => setProfileOpen(false)} />}
     </div>
   );
 }
