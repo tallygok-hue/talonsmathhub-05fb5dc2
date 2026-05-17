@@ -196,11 +196,11 @@ Deno.serve(async (req) => {
           if (ok === true) account = byName
         }
       }
-      // Strategy 2: legacy — code is the password, no username yet. Find unused account whose hash matches.
+      // Strategy 2: code-only login — match password against any account.
+      // Covers first-time logins (no username yet) AND returning users who only remember their code.
       if (!account && password) {
-        // Pull accounts that haven't set a username and try to match
-        const { data: legacyCandidates } = await supabase.from('accounts').select('id, password_hash, role, must_set_username, username').is('username', null).limit(500)
-        for (const cand of legacyCandidates || []) {
+        const { data: candidates } = await supabase.from('accounts').select('id, password_hash, role, must_set_username, username').limit(1000)
+        for (const cand of candidates || []) {
           const { data: ok } = await supabase.rpc('verify_password', { _account_id: cand.id, _password: password })
           if (ok === true) { account = cand; break }
         }
