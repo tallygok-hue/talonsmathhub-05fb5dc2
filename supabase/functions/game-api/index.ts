@@ -281,7 +281,7 @@ Deno.serve(async (req) => {
     // VALIDATE / LOGOUT (kept compatible)
     // ============================================================
     if (action === 'validate') {
-      const token = url.searchParams.get('token')
+      const token = getToken()
       const s = await getSession(token)
       if (!s) return json({ valid: false })
       if (s.device_hash) {
@@ -304,7 +304,7 @@ Deno.serve(async (req) => {
     }
 
     if (action === 'logout') {
-      let token = url.searchParams.get('token')
+      let token = getToken()
       if (!token) { try { const b = await req.json(); token = b?.token } catch {} }
       if (token) await supabase.from('active_sessions').delete().eq('session_token', token)
       return json({ success: true })
