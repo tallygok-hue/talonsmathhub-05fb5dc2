@@ -318,7 +318,7 @@ Deno.serve(async (req) => {
       if (!s) return json({ error: 'Unauthorized' }, 403)
       const accountId = s.account_id || s.code_id
       const [{ data: acc }, { data: perms }, { data: txs }] = await Promise.all([
-        supabase.from('accounts').select('id, username, role, points, total_earned, chat_count, streak_days, settings, equipped, inventory, created_at, must_set_username').eq('id', accountId).maybeSingle(),
+        supabase.from('accounts').select('id, username, display_name, avatar_emoji, bio, name_color, role, points, total_earned, chat_count, streak_days, settings, equipped, inventory, created_at, must_set_username').eq('id', accountId).maybeSingle(),
         supabase.from('account_permissions').select('permission_key').eq('account_id', accountId),
         supabase.from('point_transactions').select('amount, reason, created_at').eq('account_id', accountId).order('created_at', { ascending: false }).limit(20),
       ])
@@ -327,6 +327,32 @@ Deno.serve(async (req) => {
         permissions: (perms || []).map((p: any) => p.permission_key),
         transactions: txs || [],
       })
+    }
+
+    if (action === 'updateProfile') {
+      const s = await getSession(getToken())
+      if (!s) return json({ error: 'Unauthorized' }, 403)
+      const accountId = s.account_id || s.code_id
+      const body = await req.json().catch(() => ({}))
+      const updates: Record<string, unknown> = {}
+      if (typeof body.display_name === 'string') {
+        const dn = body.display_name.trim().slice(0, 32)
+        updates.display_name = dn || null
+      }
+      if (typeof body.avatar_emoji === 'string') {
+        const ae = Array.from(body.avatar_emoji.trim())[0] || '🎮'
+        updates.avatar_emoji = ae
+      }
+      if (typeof body.bio === 'string') {
+        updates.bio = body.bio.trim().slice(0, 200) || null
+      }
+      if (typeof body.name_color === 'string') {
+        if (/^#[0-9a-fA-F]{6}$/.test(body.name_color)) updates.name_color = body.name_color
+      }
+      if (Object.keys(updates).length === 0) return json({ ok: true })
+      updates.updated_at = new Date().toISOString()
+      await supabase.from('accounts').update(updates).eq('id', accountId)
+      return json({ ok: true })
     }
 
     if (action === 'leaderboard') {
