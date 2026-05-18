@@ -6,6 +6,7 @@ import { FeedbackWidget } from './FeedbackWidget';
 import { ChatPanel } from './ChatPanel';
 import { PollsPanel } from './PollsPanel';
 import { ProfilePanel } from './ProfilePanel';
+import { PermUsernameModal } from './PermUsernameModal';
 import { useActivityTracker } from '../lib/useActivityTracker';
 
 interface GamePortalProps {
@@ -13,6 +14,8 @@ interface GamePortalProps {
   isAdmin: boolean;
   onLogout: () => void;
   onAdminPanel: () => void;
+  mustSetUsername?: boolean;
+  onUsernameSet?: (name: string) => void;
 }
 
 interface Game {
