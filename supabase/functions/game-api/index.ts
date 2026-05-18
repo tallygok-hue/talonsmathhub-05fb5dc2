@@ -240,6 +240,12 @@ Deno.serve(async (req) => {
         await bumpQuest(account.id, 'login', 1)
       }
 
+      // Ensure starter cosmetic inventory exists (idempotent via UNIQUE constraint)
+      await supabase.from('account_inventory').upsert([
+        { account_id: account.id, kind: 'emoji', value: '🎮', source: 'default' },
+        { account_id: account.id, kind: 'color', value: '#a78bfa', source: 'default' },
+      ], { onConflict: 'account_id,kind,value', ignoreDuplicates: true })
+
       const { data: favs } = await supabase.from('code_favorites').select('game_id').eq('account_id', account.id)
       const { data: progress } = await supabase.from('code_progress').select('progress_type, data').eq('account_id', account.id)
 
@@ -317,15 +323,17 @@ Deno.serve(async (req) => {
       const s = await getSession(getToken())
       if (!s) return json({ error: 'Unauthorized' }, 403)
       const accountId = s.account_id || s.code_id
-      const [{ data: acc }, { data: perms }, { data: txs }] = await Promise.all([
+      const [{ data: acc }, { data: perms }, { data: txs }, { data: inv }] = await Promise.all([
         supabase.from('accounts').select('id, username, display_name, avatar_emoji, bio, name_color, role, points, total_earned, chat_count, streak_days, settings, equipped, inventory, created_at, must_set_username').eq('id', accountId).maybeSingle(),
         supabase.from('account_permissions').select('permission_key').eq('account_id', accountId),
         supabase.from('point_transactions').select('amount, reason, created_at').eq('account_id', accountId).order('created_at', { ascending: false }).limit(20),
+        supabase.from('account_inventory').select('kind, value, source, acquired_at').eq('account_id', accountId),
       ])
       return json({
         account: acc,
         permissions: (perms || []).map((p: any) => p.permission_key),
         transactions: txs || [],
+        inventory: inv || [],
       })
     }
 
@@ -339,20 +347,171 @@ Deno.serve(async (req) => {
         const dn = body.display_name.trim().slice(0, 32)
         updates.display_name = dn || null
       }
-      if (typeof body.avatar_emoji === 'string') {
-        const ae = Array.from(body.avatar_emoji.trim())[0] || '🎮'
-        updates.avatar_emoji = ae
-      }
       if (typeof body.bio === 'string') {
         updates.bio = body.bio.trim().slice(0, 200) || null
       }
+      // Cosmetic equips MUST be in inventory
+      if (typeof body.avatar_emoji === 'string') {
+        const ae = Array.from(body.avatar_emoji.trim())[0] as string
+        if (ae) {
+          const { data: owned } = await supabase.from('account_inventory')
+            .select('id').eq('account_id', accountId).eq('kind', 'emoji').eq('value', ae).maybeSingle()
+          if (!owned) return json({ error: 'You do not own that avatar. Buy it in the shop.' }, 403)
+          updates.avatar_emoji = ae
+        }
+      }
       if (typeof body.name_color === 'string') {
-        if (/^#[0-9a-fA-F]{6}$/.test(body.name_color)) updates.name_color = body.name_color
+        if (!/^#[0-9a-fA-F]{6}$/.test(body.name_color)) return json({ error: 'Invalid color' }, 400)
+        const { data: owned } = await supabase.from('account_inventory')
+          .select('id').eq('account_id', accountId).eq('kind', 'color').eq('value', body.name_color.toLowerCase()).maybeSingle()
+        if (!owned) return json({ error: 'You do not own that color. Buy it in the shop.' }, 403)
+        updates.name_color = body.name_color.toLowerCase()
       }
       if (Object.keys(updates).length === 0) return json({ ok: true })
       updates.updated_at = new Date().toISOString()
       await supabase.from('accounts').update(updates).eq('id', accountId)
       return json({ ok: true })
+    }
+
+    // ============================================================
+    // SHOP / PACKS / GAMBLING
+    // ============================================================
+    if (action === 'shopList') {
+      const s = await getSession(getToken())
+      if (!s) return json({ error: 'Unauthorized' }, 403)
+      const accountId = s.account_id || s.code_id
+      const [{ data: items }, { data: inv }] = await Promise.all([
+        supabase.from('shop_items').select('*').eq('active', true).order('cost', { ascending: true }),
+        supabase.from('account_inventory').select('kind, value').eq('account_id', accountId),
+      ])
+      const ownedSet = new Set((inv || []).map((i: any) => `${i.kind}:${i.value}`))
+      return json({
+        items: (items || []).map((it: any) => ({ ...it, owned: ownedSet.has(`${it.kind}:${it.value}`) })),
+        points: s.account.points || 0,
+      })
+    }
+
+    if (action === 'shopBuy') {
+      const body = await req.json().catch(() => ({}))
+      const s = await getSession(getToken(body.token))
+      if (!s) return json({ error: 'Unauthorized' }, 403)
+      const accountId = s.account_id || s.code_id
+      const itemId = String(body.itemId || '')
+      if (!itemId) return json({ error: 'Missing item' }, 400)
+      const { data: item } = await supabase.from('shop_items').select('*').eq('id', itemId).eq('active', true).maybeSingle()
+      if (!item) return json({ error: 'Item not found' }, 404)
+      const { data: already } = await supabase.from('account_inventory')
+        .select('id').eq('account_id', accountId).eq('kind', item.kind).eq('value', item.value).maybeSingle()
+      if (already) return json({ error: 'Already owned' }, 400)
+      const { data: acc } = await supabase.from('accounts').select('points').eq('id', accountId).maybeSingle()
+      if ((acc?.points || 0) < item.cost) return json({ error: 'Not enough points' }, 400)
+      await supabase.from('accounts').update({ points: (acc!.points - item.cost), updated_at: new Date().toISOString() }).eq('id', accountId)
+      await supabase.from('point_transactions').insert({ account_id: accountId, amount: -item.cost, reason: 'shop.buy', meta: { kind: item.kind, value: item.value } })
+      await supabase.from('account_inventory').insert({ account_id: accountId, kind: item.kind, value: item.value, source: 'shop' })
+      return json({ success: true, item: { kind: item.kind, value: item.value, name: item.name } })
+    }
+
+    if (action === 'packsList') {
+      const s = await getSession(getToken())
+      if (!s) return json({ error: 'Unauthorized' }, 403)
+      const { data } = await supabase.from('pack_definitions').select('*').eq('active', true).order('cost', { ascending: true })
+      return json({ packs: data || [], points: s.account.points || 0 })
+    }
+
+    if (action === 'openPack') {
+      const body = await req.json().catch(() => ({}))
+      const s = await getSession(getToken(body.token))
+      if (!s) return json({ error: 'Unauthorized' }, 403)
+      const accountId = s.account_id || s.code_id
+      const { data: pack } = await supabase.from('pack_definitions').select('*').eq('id', body.packId).eq('active', true).maybeSingle()
+      if (!pack) return json({ error: 'Pack not found' }, 404)
+      const { data: acc } = await supabase.from('accounts').select('points').eq('id', accountId).maybeSingle()
+      if ((acc?.points || 0) < pack.cost) return json({ error: 'Not enough points' }, 400)
+
+      // Roll rarity based on weights
+      const weights = pack.weights || { common: 60, uncommon: 25, rare: 10, epic: 4, legendary: 1 }
+      const rarities = Object.keys(weights)
+      const total = rarities.reduce((sum, r) => sum + Number(weights[r] || 0), 0)
+      let roll = Math.random() * total
+      let picked: string = 'common'
+      for (const r of rarities) {
+        roll -= Number(weights[r] || 0)
+        if (roll <= 0) { picked = r; break }
+      }
+      // Find an unowned item of that rarity (any kind). Fall back to lower rarities if exhausted.
+      const tryOrder = [picked, 'epic', 'rare', 'uncommon', 'common'].filter((v, i, a) => a.indexOf(v) === i)
+      let granted: any = null
+      let refundOnDupe = 0
+      for (const r of tryOrder) {
+        const { data: pool } = await supabase.from('shop_items').select('*').eq('active', true).eq('rarity', r)
+        if (!pool || pool.length === 0) continue
+        const { data: ownedRows } = await supabase.from('account_inventory').select('kind, value').eq('account_id', accountId)
+        const ownedSet = new Set((ownedRows || []).map((o: any) => `${o.kind}:${o.value}`))
+        const candidates = pool.filter((p: any) => !ownedSet.has(`${p.kind}:${p.value}`))
+        if (candidates.length > 0) {
+          granted = candidates[Math.floor(Math.random() * candidates.length)]
+          break
+        }
+      }
+      // Deduct cost first
+      await supabase.from('accounts').update({ points: (acc!.points - pack.cost), updated_at: new Date().toISOString() }).eq('id', accountId)
+      await supabase.from('point_transactions').insert({ account_id: accountId, amount: -pack.cost, reason: 'pack.open', meta: { pack: pack.key } })
+      if (granted) {
+        await supabase.from('account_inventory').insert({ account_id: accountId, kind: granted.kind, value: granted.value, source: `pack:${pack.key}` })
+        return json({ success: true, item: { kind: granted.kind, value: granted.value, name: granted.name, rarity: granted.rarity }, rarity: granted.rarity })
+      } else {
+        // Everything owned — refund half the cost
+        refundOnDupe = Math.floor(pack.cost / 2)
+        await awardPoints(accountId, refundOnDupe, 'pack.refund', { pack: pack.key })
+        return json({ success: true, duplicate: true, refund: refundOnDupe })
+      }
+    }
+
+    if (action === 'gamble') {
+      const body = await req.json().catch(() => ({}))
+      const s = await getSession(getToken(body.token))
+      if (!s) return json({ error: 'Unauthorized' }, 403)
+      const accountId = s.account_id || s.code_id
+      const game = String(body.game || '')
+      const wager = Math.max(1, Math.min(10000, Number(body.wager || 0) | 0))
+      const choice = body.choice
+      if (!['coinflip', 'dice', 'slots'].includes(game)) return json({ error: 'Unknown game' }, 400)
+      const { data: acc } = await supabase.from('accounts').select('points').eq('id', accountId).maybeSingle()
+      if ((acc?.points || 0) < wager) return json({ error: 'Not enough points' }, 400)
+
+      let payout = 0
+      const outcome: any = { game, wager }
+      if (game === 'coinflip') {
+        const result = Math.random() < 0.5 ? 'heads' : 'tails'
+        outcome.result = result
+        outcome.choice = choice
+        if (result === choice) payout = wager * 2
+      } else if (game === 'dice') {
+        // Pick high (4-6) or low (1-3); pays 2x. Choice: 'high'|'low'
+        const roll = 1 + Math.floor(Math.random() * 6)
+        outcome.roll = roll
+        outcome.choice = choice
+        const won = (choice === 'high' && roll >= 4) || (choice === 'low' && roll <= 3)
+        if (won) payout = wager * 2
+      } else if (game === 'slots') {
+        const symbols = ['🍒','🍋','🍇','🔔','⭐','💎']
+        const r = [symbols[Math.floor(Math.random() * symbols.length)], symbols[Math.floor(Math.random() * symbols.length)], symbols[Math.floor(Math.random() * symbols.length)]]
+        outcome.reels = r
+        if (r[0] === r[1] && r[1] === r[2]) {
+          const mult = r[0] === '💎' ? 20 : r[0] === '⭐' ? 10 : 5
+          payout = wager * mult
+        } else if (r[0] === r[1] || r[1] === r[2]) {
+          payout = Math.floor(wager * 1.5)
+        }
+      }
+
+      const net = payout - wager
+      // Update balance in a single delta
+      await supabase.from('accounts').update({ points: (acc!.points || 0) + net, updated_at: new Date().toISOString() }).eq('id', accountId)
+      await supabase.from('point_transactions').insert({ account_id: accountId, amount: net, reason: `gamble.${game}`, meta: outcome })
+      await supabase.from('gamble_logs').insert({ account_id: accountId, game, wager, payout, outcome })
+      const { data: after } = await supabase.from('accounts').select('points').eq('id', accountId).maybeSingle()
+      return json({ success: true, won: payout > 0, payout, net, outcome, balance: after?.points || 0 })
     }
 
     if (action === 'leaderboard') {

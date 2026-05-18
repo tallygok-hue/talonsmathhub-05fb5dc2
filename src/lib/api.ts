@@ -268,3 +268,12 @@ export async function apiReadFlags() {
   });
   return res.ok ? res.json() : [];
 }
+
+// === Shop / Packs / Gambling ===
+export async function apiShopList() { return call('shopList', 'GET'); }
+export async function apiShopBuy(itemId: string) { return call('shopBuy', 'POST', { itemId }); }
+export async function apiPacksList() { return call('packsList', 'GET'); }
+export async function apiOpenPack(packId: string) { return call('openPack', 'POST', { packId }); }
+export async function apiGamble(game: 'coinflip' | 'dice' | 'slots', wager: number, choice?: string) {
+  return call('gamble', 'POST', { game, wager, choice });
+}
