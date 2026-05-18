@@ -175,14 +175,7 @@ export function GamePortal({ username, isAdmin, onLogout, onAdminPanel, mustSetU
     );
   }
 
-  // Resolve favorites/recents to game objects
-  const favGames: Game[] = favorites.map(id => GAME_CATALOG[id] || (recent.find(r => r.id === id) ? {
-    id, name: recent.find(r => r.id === id)!.name, icon: recent.find(r => r.id === id)!.icon || '🎮',
-    url: recent.find(r => r.id === id)!.url || '#',
-  } : null)).filter(Boolean) as Game[];
-  const recentGames: Game[] = recent.slice(0, 12).map(r => ({
-    id: r.id, name: r.name, icon: r.icon || '🎮', url: r.url || '#',
-  }));
+  // (favorites/recents still tracked for sync; not displayed in header anymore)
 
   // Default landing: full-screen Lumin Games Hub (700+ games)
   return (
