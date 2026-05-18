@@ -115,8 +115,8 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-white">
       {view === 'math' && <MathHome onSecretAccess={() => setView('login')} isAuthenticated={isAuthenticated} onGoToGames={() => setView('games')} />}
-      {view === 'login' && <SecretLogin onLogin={handleLogin} onBack={() => setView('math')} onSuccess={(admin: boolean) => setView(admin ? 'admin' : 'games')} />}
-      {view === 'games' && isAuthenticated && <GamePortal username={currentUser} isAdmin={isAdmin} onLogout={handleLogout} onAdminPanel={() => setView('admin')} />}
+      {view === 'login' && <SecretLogin onLogin={handleLogin} onBack={() => setView('math')} onSuccess={(admin, must) => { setMustSetUsername(must); setView(admin && !must ? 'admin' : 'games'); }} />}
+      {view === 'games' && isAuthenticated && <GamePortal username={currentUser} isAdmin={isAdmin} onLogout={handleLogout} onAdminPanel={() => setView('admin')} mustSetUsername={mustSetUsername} onUsernameSet={(name) => { setCurrentUser(name); setMustSetUsername(false); }} />}
       {view === 'admin' && isAdmin && <AdminPanel onBack={() => setView('games')} onLogout={handleLogout} />}
     </div>
   );
