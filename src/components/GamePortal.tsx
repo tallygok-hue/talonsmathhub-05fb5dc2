@@ -200,51 +200,18 @@ export function GamePortal({ username, isAdmin, onLogout, onAdminPanel, mustSetU
             <button onClick={() => setProfileOpen(true)} className="px-3 py-2 bg-purple-600/20 text-purple-300 rounded-lg text-xs font-medium hover:bg-purple-600/30 border border-purple-600/30">
               ✨ Profile
             </button>
-            <button onClick={() => setAccountOpen(v => !v)} className="px-3 py-2 bg-blue-600/20 text-blue-300 rounded-lg text-xs font-medium hover:bg-blue-600/30 border border-blue-600/30">
-              👤 Account ({favGames.length}⭐ · {recentGames.length}🕒)
+            <button onClick={() => setPacksOpen(true)} className="px-3 py-2 bg-blue-600/20 text-blue-300 rounded-lg text-xs font-medium hover:bg-blue-600/30 border border-blue-600/30">
+              📦 Packs
             </button>
-            
+            <button onClick={() => setCasinoOpen(true)} className="px-3 py-2 bg-yellow-600/20 text-yellow-300 rounded-lg text-xs font-medium hover:bg-yellow-600/30 border border-yellow-600/30">
+              🎰 Casino
+            </button>
             {isAdmin && (
               <button onClick={onAdminPanel} className="px-3 py-2 bg-yellow-600/20 text-yellow-400 rounded-lg text-xs font-medium hover:bg-yellow-600/30 border border-yellow-600/30">⚙️ Admin</button>
             )}
             <button onClick={onLogout} className="px-3 py-2 bg-red-900/30 text-red-400 rounded-lg text-xs font-medium hover:bg-red-900/50 border border-red-800/30" title="Exit">🚨 Exit</button>
           </div>
         </div>
-
-        {/* Account drawer: favorites + recently played */}
-        {accountOpen && (favGames.length > 0 || recentGames.length > 0) && (
-          <div className="border-t border-gray-800 bg-gray-900/60 max-w-7xl mx-auto px-4 py-3 space-y-3">
-            {favGames.length > 0 && (
-              <div>
-                <h3 className="text-[10px] uppercase tracking-wider font-bold text-yellow-400 mb-1.5">⭐ Favorites</h3>
-                <div className="flex gap-2 overflow-x-auto pb-1">
-                  {favGames.map(g => (
-                    <button key={g.id} onClick={() => openGame(g)}
-                      className="bg-gray-800 hover:bg-gray-700 border border-yellow-600/30 rounded-lg px-2.5 py-1.5 flex items-center gap-1.5 shrink-0 text-xs whitespace-nowrap">
-                      <span>{g.icon}</span><span>{g.name}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-            {recentGames.length > 0 && (
-              <div>
-                <h3 className="text-[10px] uppercase tracking-wider font-bold text-blue-400 mb-1.5">🕒 Recently Played</h3>
-                <div className="flex gap-2 overflow-x-auto pb-1">
-                  {recentGames.map(g => (
-                    <button key={g.id + (g as any).ts} onClick={() => openGame(g)}
-                      className="bg-gray-800 hover:bg-gray-700 border border-blue-600/30 rounded-lg px-2.5 py-1.5 flex items-center gap-1.5 shrink-0 text-xs whitespace-nowrap">
-                      <span>{g.icon}</span><span>{g.name}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-            {favGames.length === 0 && recentGames.length === 0 && (
-              <p className="text-xs text-gray-600 text-center py-2">No favorites or recent games yet — play something below!</p>
-            )}
-          </div>
-        )}
       </header>
 
       <PollsPanel />
