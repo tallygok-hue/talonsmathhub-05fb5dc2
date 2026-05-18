@@ -270,6 +270,7 @@ export function GamePortal({ username, isAdmin, onLogout, onAdminPanel, mustSetU
       <FeedbackWidget />
       <ChatPanel username={username} isAdmin={isAdmin} />
       {profileOpen && <ProfilePanel onClose={() => setProfileOpen(false)} />}
+      {mustSetUsername && <PermUsernameModal onComplete={(name) => onUsernameSet?.(name)} />}
     </div>
   );
 }
