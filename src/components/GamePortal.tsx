@@ -64,8 +64,9 @@ export function GamePortal({ username, isAdmin, onLogout, onAdminPanel, mustSetU
   const [recent, setRecent] = useState<RecentGame[]>([]);
   
   const [luminLoading, setLuminLoading] = useState(true);
-  const [accountOpen, setAccountOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [packsOpen, setPacksOpen] = useState(false);
+  const [casinoOpen, setCasinoOpen] = useState(false);
 
   // Load favs + recent from cloud
   const refreshAccount = useCallback(async () => {
