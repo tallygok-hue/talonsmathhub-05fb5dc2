@@ -240,6 +240,12 @@ Deno.serve(async (req) => {
         await bumpQuest(account.id, 'login', 1)
       }
 
+      // Ensure starter cosmetic inventory exists (idempotent via UNIQUE constraint)
+      await supabase.from('account_inventory').upsert([
+        { account_id: account.id, kind: 'emoji', value: '🎮', source: 'default' },
+        { account_id: account.id, kind: 'color', value: '#a78bfa', source: 'default' },
+      ], { onConflict: 'account_id,kind,value', ignoreDuplicates: true })
+
       const { data: favs } = await supabase.from('code_favorites').select('game_id').eq('account_id', account.id)
       const { data: progress } = await supabase.from('code_progress').select('progress_type, data').eq('account_id', account.id)
 
