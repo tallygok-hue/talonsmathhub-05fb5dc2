@@ -38,6 +38,33 @@ export type Database = {
         }
         Relationships: []
       }
+      account_inventory: {
+        Row: {
+          account_id: string
+          acquired_at: string
+          id: string
+          kind: string
+          source: string
+          value: string
+        }
+        Insert: {
+          account_id: string
+          acquired_at?: string
+          id?: string
+          kind: string
+          source?: string
+          value: string
+        }
+        Update: {
+          account_id?: string
+          acquired_at?: string
+          id?: string
+          kind?: string
+          source?: string
+          value?: string
+        }
+        Relationships: []
+      }
       account_permissions: {
         Row: {
           account_id: string
@@ -531,6 +558,36 @@ export type Database = {
         }
         Relationships: []
       }
+      gamble_logs: {
+        Row: {
+          account_id: string
+          created_at: string
+          game: string
+          id: string
+          outcome: Json
+          payout: number
+          wager: number
+        }
+        Insert: {
+          account_id: string
+          created_at?: string
+          game: string
+          id?: string
+          outcome?: Json
+          payout: number
+          wager: number
+        }
+        Update: {
+          account_id?: string
+          created_at?: string
+          game?: string
+          id?: string
+          outcome?: Json
+          payout?: number
+          wager?: number
+        }
+        Relationships: []
+      }
       game_plays: {
         Row: {
           account_id: string | null
@@ -612,6 +669,39 @@ export type Database = {
           success?: boolean
           user_agent?: string | null
           username?: string
+        }
+        Relationships: []
+      }
+      pack_definitions: {
+        Row: {
+          active: boolean
+          cost: number
+          created_at: string
+          description: string | null
+          id: string
+          key: string
+          name: string
+          weights: Json
+        }
+        Insert: {
+          active?: boolean
+          cost?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          key: string
+          name: string
+          weights?: Json
+        }
+        Update: {
+          active?: boolean
+          cost?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          key?: string
+          name?: string
+          weights?: Json
         }
         Relationships: []
       }
@@ -883,6 +973,39 @@ export type Database = {
           updated_at?: string
           username?: string
           width?: number | null
+        }
+        Relationships: []
+      }
+      shop_items: {
+        Row: {
+          active: boolean
+          cost: number
+          created_at: string
+          id: string
+          kind: string
+          name: string
+          rarity: string
+          value: string
+        }
+        Insert: {
+          active?: boolean
+          cost?: number
+          created_at?: string
+          id?: string
+          kind: string
+          name: string
+          rarity?: string
+          value: string
+        }
+        Update: {
+          active?: boolean
+          cost?: number
+          created_at?: string
+          id?: string
+          kind?: string
+          name?: string
+          rarity?: string
+          value?: string
         }
         Relationships: []
       }
