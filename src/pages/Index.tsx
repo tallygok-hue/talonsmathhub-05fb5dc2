@@ -13,6 +13,7 @@ const Index = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [currentUser, setCurrentUser] = useState('');
+  const [mustSetUsername, setMustSetUsername] = useState(false);
   const [loading, setLoading] = useState(true);
 
   // Restore session on load
