@@ -52,7 +52,7 @@ const GAME_CATALOG: Record<string, Game> = {
   garticphone: { id: 'garticphone', name: 'Gartic Phone', icon: '📞', url: 'https://garticphone.com/', color: 'from-orange-400 to-pink-500' },
 };
 
-export function GamePortal({ username, isAdmin, onLogout, onAdminPanel }: GamePortalProps) {
+export function GamePortal({ username, isAdmin, onLogout, onAdminPanel, mustSetUsername, onUsernameSet }: GamePortalProps) {
   const [activeGame, setActiveGame] = useState<Game | null>(null);
   const [iframeError, setIframeError] = useState(false);
   const [iframeLoading, setIframeLoading] = useState(true);
