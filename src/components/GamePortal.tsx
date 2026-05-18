@@ -6,6 +6,7 @@ import { FeedbackWidget } from './FeedbackWidget';
 import { ChatPanel } from './ChatPanel';
 import { PollsPanel } from './PollsPanel';
 import { ProfilePanel } from './ProfilePanel';
+import { PermUsernameModal } from './PermUsernameModal';
 import { useActivityTracker } from '../lib/useActivityTracker';
 
 interface GamePortalProps {
@@ -13,6 +14,8 @@ interface GamePortalProps {
   isAdmin: boolean;
   onLogout: () => void;
   onAdminPanel: () => void;
+  mustSetUsername?: boolean;
+  onUsernameSet?: (name: string) => void;
 }
 
 interface Game {
@@ -49,7 +52,7 @@ const GAME_CATALOG: Record<string, Game> = {
   garticphone: { id: 'garticphone', name: 'Gartic Phone', icon: '📞', url: 'https://garticphone.com/', color: 'from-orange-400 to-pink-500' },
 };
 
-export function GamePortal({ username, isAdmin, onLogout, onAdminPanel }: GamePortalProps) {
+export function GamePortal({ username, isAdmin, onLogout, onAdminPanel, mustSetUsername, onUsernameSet }: GamePortalProps) {
   const [activeGame, setActiveGame] = useState<Game | null>(null);
   const [iframeError, setIframeError] = useState(false);
   const [iframeLoading, setIframeLoading] = useState(true);
@@ -267,6 +270,7 @@ export function GamePortal({ username, isAdmin, onLogout, onAdminPanel }: GamePo
       <FeedbackWidget />
       <ChatPanel username={username} isAdmin={isAdmin} />
       {profileOpen && <ProfilePanel onClose={() => setProfileOpen(false)} />}
+      {mustSetUsername && <PermUsernameModal onComplete={(name) => onUsernameSet?.(name)} />}
     </div>
   );
 }
