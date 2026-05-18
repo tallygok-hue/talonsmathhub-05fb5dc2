@@ -6,6 +6,8 @@ import { FeedbackWidget } from './FeedbackWidget';
 import { ChatPanel } from './ChatPanel';
 import { PollsPanel } from './PollsPanel';
 import { ProfilePanel } from './ProfilePanel';
+import { PacksSystem } from './PacksSystem';
+import { GamblingGames } from './GamblingGames';
 import { PermUsernameModal } from './PermUsernameModal';
 import { useActivityTracker } from '../lib/useActivityTracker';
 
