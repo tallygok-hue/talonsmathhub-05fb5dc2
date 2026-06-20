@@ -776,7 +776,7 @@ Deno.serve(async (req) => {
       const s = await requireAdmin(getToken(body.token))
       if (!s) return json({ error: 'Unauthorized' }, 403)
       const updates: any = {}
-      if (body.role !== undefined) updates.role = body.role === 'admin' ? 'admin' : 'user'
+      if (body.role !== undefined) updates.role = ['user','moderator','admin'].includes(body.role) ? body.role : 'user'
       if (body.banned !== undefined) updates.banned = !!body.banned
       if (body.muteMinutes !== undefined) {
         updates.muted_until = body.muteMinutes > 0 ? new Date(Date.now() + body.muteMinutes * 60_000).toISOString() : null
