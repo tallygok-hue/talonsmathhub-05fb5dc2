@@ -204,6 +204,7 @@ export function AdminPanel({ onBack, onLogout }: AdminPanelProps) {
       )}
 
       {activeTab === 'live' && <LiveMonitor />}
+      {activeTab === 'economy' && <AdminEconomyPanel />}
       {activeTab === 'analytics' && <AnalyticsPanel />}
       {activeTab === 'polls' && <PollsAdmin />}
 
