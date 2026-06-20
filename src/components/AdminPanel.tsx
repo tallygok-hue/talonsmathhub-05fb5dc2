@@ -23,7 +23,7 @@ interface RequestEntry { id: string; code_id: string; username: string; category
 interface BannedDevice { id: string; device_hash: string; reason: string | null; created_at: string; last_username: string | null; last_user_agent: string | null; }
 interface CodeAccount { favorites: string[]; recent: any[]; sessions: any[]; recentLogs: any[]; }
 
-type TabId = 'dashboard' | 'live' | 'sessions' | 'logs' | 'codes' | 'bans' | 'requests' | 'analytics' | 'polls';
+type TabId = 'dashboard' | 'economy' | 'live' | 'sessions' | 'logs' | 'codes' | 'bans' | 'requests' | 'analytics' | 'polls';
 
 export function AdminPanel({ onBack, onLogout }: AdminPanelProps) {
   const [activeTab, setActiveTab] = useState<TabId>('dashboard');
