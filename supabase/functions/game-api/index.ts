@@ -914,7 +914,18 @@ Deno.serve(async (req) => {
         .select('id, account_id, code_id, username, message, is_admin, image_url, created_at')
         .gte('created_at', new Date(Date.now() - 24 * 3600_000).toISOString())
         .order('created_at', { ascending: false }).limit(150)
-      return json({ messages: (data || []).reverse() })
+      const msgs = (data || []).reverse()
+      const ids = [...new Set(msgs.map((m: any) => m.account_id).filter(Boolean))]
+      const { data: accs } = ids.length
+        ? await supabase.from('accounts').select('id, role, avatar_emoji, name_color').in('id', ids as string[])
+        : { data: [] as any }
+      const am = new Map((accs || []).map((a: any) => [a.id, a]))
+      return json({
+        messages: msgs.map((m: any) => {
+          const a = am.get(m.account_id) || {}
+          return { ...m, role: a.role || (m.is_admin ? 'admin' : 'user'), avatar_emoji: a.avatar_emoji || null, name_color: a.name_color || null }
+        }),
+      })
     }
     if (action === 'sendChat') {
       const body = await req.json()
