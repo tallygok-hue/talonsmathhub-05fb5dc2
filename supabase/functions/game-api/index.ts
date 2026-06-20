@@ -75,6 +75,21 @@ Deno.serve(async (req) => {
       if (!s || s.account.role !== 'admin') return null
       return s
     }
+    const requireMod = async (token: string | null) => {
+      const s = await getSession(token)
+      if (!s) return null
+      if (s.account.role === 'admin' || s.account.role === 'moderator') return s
+      return null
+    }
+    // Returns true if claim was new (first today), false if already claimed today
+    const claimDailyOnce = async (accountId: string, key: string): Promise<boolean> => {
+      const today = new Date().toISOString().slice(0, 10)
+      const { error } = await supabase.from('daily_point_claims').insert({
+        account_id: accountId, claim_key: key, claim_date: today,
+      })
+      // 23505 = unique violation → already claimed today
+      return !error
+    }
 
     // ============================================================
     // POINTS HELPERS
