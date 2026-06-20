@@ -520,13 +520,58 @@ Deno.serve(async (req) => {
         }
       }
 
+      // Determine pity tier from wager
+      const tier = wager >= 500 ? 'big' : wager >= 50 ? 'mid' : 'small'
+      const refundPct = tier === 'big' ? 0.25 : tier === 'mid' ? 0.15 : 0.10
+
+      // Load pity row for this tier
+      const { data: pityRow } = await supabase.from('gamble_pity')
+        .select('loss_streak, total_lost').eq('account_id', accountId).eq('tier', tier).maybeSingle()
+      let lossStreak = pityRow?.loss_streak || 0
+      let totalLost = pityRow?.total_lost || 0
+      let pityBonus = 0
+      let pityTriggered = false
+
       const net = payout - wager
-      // Update balance in a single delta
-      await supabase.from('accounts').update({ points: (acc!.points || 0) + net, updated_at: new Date().toISOString() }).eq('id', accountId)
+      if (payout > 0) {
+        // Win → reset pity for this tier
+        lossStreak = 0
+        totalLost = 0
+      } else {
+        lossStreak += 1
+        totalLost += wager
+        if (lossStreak >= 10) {
+          pityBonus = Math.max(1, Math.floor(totalLost * refundPct))
+          pityTriggered = true
+          lossStreak = 0
+          totalLost = 0
+        }
+      }
+
+      const totalNet = net + pityBonus
+      await supabase.from('accounts').update({ points: (acc!.points || 0) + totalNet, updated_at: new Date().toISOString() }).eq('id', accountId)
       await supabase.from('point_transactions').insert({ account_id: accountId, amount: net, reason: `gamble.${game}`, meta: outcome })
-      await supabase.from('gamble_logs').insert({ account_id: accountId, game, wager, payout, outcome })
+      if (pityBonus > 0) {
+        await supabase.from('point_transactions').insert({ account_id: accountId, amount: pityBonus, reason: `gamble.pity`, meta: { tier, refundPct } })
+      }
+      await supabase.from('gamble_logs').insert({ account_id: accountId, game, wager, payout, outcome: { ...outcome, pityBonus, tier } })
+      await supabase.from('gamble_pity').upsert({
+        account_id: accountId, tier, loss_streak: lossStreak, total_lost: totalLost, updated_at: new Date().toISOString(),
+      }, { onConflict: 'account_id,tier' })
+
       const { data: after } = await supabase.from('accounts').select('points').eq('id', accountId).maybeSingle()
-      return json({ success: true, won: payout > 0, payout, net, outcome, balance: after?.points || 0 })
+      return json({
+        success: true, won: payout > 0, payout, net: totalNet, outcome, balance: after?.points || 0,
+        pityBonus, pityTriggered, pityProgress: { tier, lossStreak, threshold: 10, refundPct },
+      })
+    }
+
+    if (action === 'gamblePity') {
+      const s = await getSession(getToken())
+      if (!s) return json({ error: 'Unauthorized' }, 403)
+      const accountId = s.account_id || s.code_id
+      const { data } = await supabase.from('gamble_pity').select('tier, loss_streak, total_lost').eq('account_id', accountId)
+      return json({ pity: data || [] })
     }
 
     if (action === 'leaderboard') {
