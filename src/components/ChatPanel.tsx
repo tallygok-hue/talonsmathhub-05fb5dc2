@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { apiGetChat, apiSendChat, apiDeleteChat, apiModTimeoutUser, apiModAdjustPoints, apiAdminSetRole } from '../lib/api';
+import { apiGetChat, apiSendChat, apiDeleteChat, apiModTimeoutUser, apiModAdjustPoints, apiAdminSetRole, apiMe } from '../lib/api';
 
 interface ChatMsg {
   id: string;
