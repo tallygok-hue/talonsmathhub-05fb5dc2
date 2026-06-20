@@ -1184,7 +1184,11 @@ Deno.serve(async (req) => {
         code_id: accId, account_id: accId, username: s.account.username || s.username, category: cat, message,
       }).select().single()
       if (error) return json({ error: error.message }, 400)
-      return json({ success: true, request: data })
+      let pointsAwarded = 0
+      if (await claimDailyOnce(accId, 'request_submit')) {
+        pointsAwarded = await awardPoints(accId, 20, 'request.submit.daily')
+      }
+      return json({ success: true, request: data, pointsAwarded })
     }
     if (action === 'getMyRequests') {
       const s = await requireSession(getToken())
