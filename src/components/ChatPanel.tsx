@@ -26,7 +26,8 @@ const TIMEOUT_OPTIONS = [
   { label: '24 h', minutes: 60 * 24 },
 ];
 
-export function ChatPanel({ username, isAdmin, isMod = false }: Props) {
+export function ChatPanel({ username, isAdmin, isMod: isModProp }: Props) {
+  const [isMod, setIsMod] = useState(!!isModProp);
   const canModerate = isAdmin || isMod;
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMsg[]>([]);
@@ -35,6 +36,13 @@ export function ChatPanel({ username, isAdmin, isMod = false }: Props) {
   const [sending, setSending] = useState(false);
   const [menu, setMenu] = useState<{ msgId: string; accountId: string; username: string } | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (isAdmin) return;
+    apiMe().then(me => {
+      if (me?.account?.role === 'moderator') setIsMod(true);
+    });
+  }, [isAdmin]);
 
   const refresh = useCallback(async () => {
     const r = await apiGetChat();
