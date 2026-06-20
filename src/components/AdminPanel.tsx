@@ -9,6 +9,7 @@ import { supabase } from '../integrations/supabase/client';
 import { LiveMonitor } from './LiveMonitor';
 import { AnalyticsPanel } from './AnalyticsPanel';
 import { PollsAdmin } from './PollsAdmin';
+import { AdminEconomyPanel } from './AdminEconomyPanel';
 
 interface AdminPanelProps {
   onBack: () => void;
