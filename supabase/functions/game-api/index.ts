@@ -1353,12 +1353,18 @@ Deno.serve(async (req) => {
       const idx = parseInt(body.optionIndex)
       if (isNaN(idx) || idx < 0 || idx >= opts.length) return json({ error: 'Invalid option' }, 400)
       const accId = s.account_id || s.code_id
+      const { data: existingVote } = await supabase.from('poll_votes').select('id').eq('poll_id', body.pollId).eq('account_id', accId).maybeSingle()
       await supabase.from('poll_votes').upsert(
         { poll_id: body.pollId, code_id: accId, account_id: accId, option_index: idx },
         { onConflict: 'poll_id,code_id' }
       )
       await bumpQuest(accId, 'poll_vote', 1)
-      return json({ success: true })
+      // First poll vote per day = 20 pts. Only if this is a new vote (not changing existing vote).
+      let pointsAwarded = 0
+      if (!existingVote && await claimDailyOnce(accId, 'poll_vote')) {
+        pointsAwarded = await awardPoints(accId, 20, 'poll.vote.daily')
+      }
+      return json({ success: true, pointsAwarded })
     }
 
     return json({ error: 'Unknown action' }, 400)
