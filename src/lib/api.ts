@@ -277,3 +277,15 @@ export async function apiOpenPack(packId: string) { return call('openPack', 'POS
 export async function apiGamble(game: 'coinflip' | 'dice' | 'slots', wager: number, choice?: string) {
   return call('gamble', 'POST', { game, wager, choice });
 }
+export async function apiGamblePity() { return call('gamblePity', 'GET'); }
+
+// === Moderation ===
+export async function apiModTimeoutUser(accountId: string, minutes: number) {
+  return call('modTimeoutUser', 'POST', { accountId, minutes });
+}
+export async function apiModAdjustPoints(accountId: string, amount: number, note?: string) {
+  return call('modAdjustPoints', 'POST', { accountId, amount, note });
+}
+export async function apiAdminSetRole(accountId: string, role: 'user' | 'moderator' | 'admin') {
+  return call('adminSetRole', 'POST', { accountId, role });
+}

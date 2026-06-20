@@ -9,6 +9,7 @@ import { supabase } from '../integrations/supabase/client';
 import { LiveMonitor } from './LiveMonitor';
 import { AnalyticsPanel } from './AnalyticsPanel';
 import { PollsAdmin } from './PollsAdmin';
+import { AdminEconomyPanel } from './AdminEconomyPanel';
 
 interface AdminPanelProps {
   onBack: () => void;
@@ -22,7 +23,7 @@ interface RequestEntry { id: string; code_id: string; username: string; category
 interface BannedDevice { id: string; device_hash: string; reason: string | null; created_at: string; last_username: string | null; last_user_agent: string | null; }
 interface CodeAccount { favorites: string[]; recent: any[]; sessions: any[]; recentLogs: any[]; }
 
-type TabId = 'dashboard' | 'live' | 'sessions' | 'logs' | 'codes' | 'bans' | 'requests' | 'analytics' | 'polls';
+type TabId = 'dashboard' | 'economy' | 'live' | 'sessions' | 'logs' | 'codes' | 'bans' | 'requests' | 'analytics' | 'polls';
 
 export function AdminPanel({ onBack, onLogout }: AdminPanelProps) {
   const [activeTab, setActiveTab] = useState<TabId>('dashboard');
@@ -141,6 +142,7 @@ export function AdminPanel({ onBack, onLogout }: AdminPanelProps) {
 
   const tabs: { id: TabId; label: string; icon: string; badge?: number }[] = [
     { id: 'dashboard', label: 'Dashboard', icon: '📊' },
+    { id: 'economy', label: 'Economy', icon: '💰' },
     { id: 'live', label: 'Live', icon: '📺', badge: activeSessions.length || undefined },
     { id: 'sessions', label: 'Sessions', icon: '👥' },
     { id: 'analytics', label: 'Analytics', icon: '📈' },
@@ -202,6 +204,7 @@ export function AdminPanel({ onBack, onLogout }: AdminPanelProps) {
       )}
 
       {activeTab === 'live' && <LiveMonitor />}
+      {activeTab === 'economy' && <AdminEconomyPanel />}
       {activeTab === 'analytics' && <AnalyticsPanel />}
       {activeTab === 'polls' && <PollsAdmin />}
 
