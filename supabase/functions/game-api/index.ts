@@ -974,10 +974,63 @@ Deno.serve(async (req) => {
     }
     if (action === 'deleteChat') {
       const body = await req.json()
-      const s = await requireAdmin(getToken(body.token))
+      const s = await requireMod(getToken(body.token))
       if (!s) return json({ error: 'Unauthorized' }, 403)
       await supabase.from('chat_messages').delete().eq('id', body.messageId)
+      await supabase.from('audit_logs').insert({
+        actor_account_id: s.account_id || s.code_id, action: 'chat.delete', target: body.messageId,
+      })
       return json({ success: true })
+    }
+    // Moderator action: timeout/suspend user from chat (capped at 24h for non-admins)
+    if (action === 'modTimeoutUser') {
+      const body = await req.json()
+      const s = await requireMod(getToken(body.token))
+      if (!s) return json({ error: 'Unauthorized' }, 403)
+      const isAdmin = s.account.role === 'admin'
+      let minutes = Math.max(0, Math.floor(Number(body.minutes) || 0))
+      if (!isAdmin) minutes = Math.min(minutes, 60 * 24) // mods capped at 24h
+      const mutedUntil = minutes > 0 ? new Date(Date.now() + minutes * 60_000).toISOString() : null
+      await supabase.from('accounts').update({ muted_until: mutedUntil }).eq('id', body.accountId)
+      await supabase.from('audit_logs').insert({
+        actor_account_id: s.account_id || s.code_id, action: 'chat.timeout', target: body.accountId, meta: { minutes },
+      })
+      return json({ success: true, mutedUntil })
+    }
+    // Moderator action: adjust points (capped at +/- 100 for non-admins)
+    if (action === 'modAdjustPoints') {
+      const body = await req.json()
+      const s = await requireMod(getToken(body.token))
+      if (!s) return json({ error: 'Unauthorized' }, 403)
+      const isAdmin = s.account.role === 'admin'
+      let delta = Math.floor(Number(body.amount) || 0)
+      if (!isAdmin) delta = Math.max(-100, Math.min(100, delta))
+      const { data: acc } = await supabase.from('accounts').select('points, total_earned').eq('id', body.accountId).maybeSingle()
+      const newPoints = Math.max(0, (acc?.points || 0) + delta)
+      await supabase.from('accounts').update({
+        points: newPoints,
+        total_earned: delta > 0 ? (acc?.total_earned || 0) + delta : (acc?.total_earned || 0),
+      }).eq('id', body.accountId)
+      await supabase.from('point_transactions').insert({
+        account_id: body.accountId, amount: delta, reason: isAdmin ? 'admin.adjust' : 'mod.adjust',
+        meta: { by: s.account_id || s.code_id, note: body.note || null },
+      })
+      await supabase.from('audit_logs').insert({
+        actor_account_id: s.account_id || s.code_id, action: 'points.adjust', target: body.accountId, meta: { delta },
+      })
+      return json({ success: true, points: newPoints })
+    }
+    // Admin only: set role (user|moderator|admin)
+    if (action === 'adminSetRole') {
+      const body = await req.json()
+      const s = await requireAdmin(getToken(body.token))
+      if (!s) return json({ error: 'Unauthorized' }, 403)
+      const role = ['user', 'moderator', 'admin'].includes(body.role) ? body.role : 'user'
+      await supabase.from('accounts').update({ role }).eq('id', body.accountId)
+      await supabase.from('audit_logs').insert({
+        actor_account_id: s.account_id || s.code_id, action: 'role.set', target: body.accountId, meta: { role },
+      })
+      return json({ success: true, role })
     }
     if (action === 'reportChat') {
       const body = await req.json()
