@@ -23,25 +23,28 @@ async function call(action: string, method: 'GET' | 'POST' = 'GET', body?: unkno
   return res.json();
 }
 
-export function getSessionToken(): string | null { return sessionStorage.getItem('tmh_session_token'); }
-export function setSessionToken(token: string) { sessionStorage.setItem('tmh_session_token', token); }
+// Use localStorage so session survives refresh, new tabs, and accidental tab close.
+// (sessionStorage was being wiped by tab-close + pagehide beacon, kicking users to the home page.)
+const STORE: Storage = typeof window !== 'undefined' ? window.localStorage : ({} as Storage);
+export function getSessionToken(): string | null { return STORE.getItem ? STORE.getItem('tmh_session_token') : null; }
+export function setSessionToken(token: string) { STORE.setItem('tmh_session_token', token); }
 export function clearSessionToken() {
-  sessionStorage.removeItem('tmh_session_token');
-  sessionStorage.removeItem('tmh_code_id');
-  sessionStorage.removeItem('tmh_user');
-  sessionStorage.removeItem('tmh_admin');
+  STORE.removeItem('tmh_session_token');
+  STORE.removeItem('tmh_code_id');
+  STORE.removeItem('tmh_user');
+  STORE.removeItem('tmh_admin');
 }
-export function getCodeId(): string | null { return sessionStorage.getItem('tmh_code_id'); }
+export function getCodeId(): string | null { return STORE.getItem ? STORE.getItem('tmh_code_id') : null; }
 
 export async function apiLogin(username: string, code: string) {
   const deviceHash = await getDeviceHash();
   const result = await call('login', 'POST', { username, code, deviceHash });
   if (result.success) {
     setSessionToken(result.sessionToken);
-    sessionStorage.setItem('tmh_code_id', result.codeId);
-    sessionStorage.setItem('tmh_user', result.username || username || '');
-    if (result.isAdmin) sessionStorage.setItem('tmh_admin', 'true');
-    else sessionStorage.removeItem('tmh_admin');
+    STORE.setItem('tmh_code_id', result.codeId);
+    STORE.setItem('tmh_user', result.username || username || '');
+    if (result.isAdmin) STORE.setItem('tmh_admin', 'true');
+    else STORE.removeItem('tmh_admin');
   }
   return result;
 }
@@ -58,17 +61,10 @@ export async function apiLogout() {
   clearSessionToken();
 }
 
-// Beacon-based logout — fires reliably during pagehide/unload.
-// sendBeacon cannot set custom headers, so we send the token in the body.
-export function apiLogoutBeacon() {
-  const token = getSessionToken();
-  if (!token) return;
-  try {
-    const url = `${FUNCTION_URL}?action=logout&apikey=${ANON_KEY}`;
-    const blob = new Blob([JSON.stringify({ token })], { type: 'application/json' });
-    navigator.sendBeacon(url, blob);
-  } catch {}
-}
+// No-op: previous auto-logout-on-unload caused users to be bounced back to
+// the front page after a refresh because the server-side session was killed
+// before the new page-load could re-validate. Sessions now expire server-side.
+export function apiLogoutBeacon() { /* intentionally disabled */ }
 
 export async function apiToggleFav(gameId: string) {
   return call('toggleFav', 'POST', { gameId });

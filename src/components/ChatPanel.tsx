@@ -35,6 +35,7 @@ export function ChatPanel({ username, isAdmin, isMod: isModProp }: Props) {
   const [unread, setUnread] = useState(0);
   const [sending, setSending] = useState(false);
   const [menu, setMenu] = useState<{ msgId: string; accountId: string; username: string } | null>(null);
+  const [notice, setNotice] = useState<{ type: 'mute' | 'error' | 'info'; text: string; until?: number } | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -43,6 +44,17 @@ export function ChatPanel({ username, isAdmin, isMod: isModProp }: Props) {
       if (me?.account?.role === 'moderator') setIsMod(true);
     });
   }, [isAdmin]);
+
+  // Live countdown for mute notice
+  const [, forceTick] = useState(0);
+  useEffect(() => {
+    if (notice?.type !== 'mute' || !notice.until) return;
+    const i = setInterval(() => {
+      if (notice.until && Date.now() >= notice.until) setNotice(null);
+      else forceTick(x => x + 1);
+    }, 1000);
+    return () => clearInterval(i);
+  }, [notice]);
 
   const refresh = useCallback(async () => {
     const r = await apiGetChat();
@@ -80,7 +92,28 @@ export function ChatPanel({ username, isAdmin, isMod: isModProp }: Props) {
     setInput('');
     const r = await apiSendChat(text);
     setSending(false);
-    if (r?.error) setInput(text);
+    if (r?.error) {
+      setInput(text);
+      if (r.mutedUntil) {
+        const until = new Date(r.mutedUntil).getTime();
+        setNotice({ type: 'mute', text: 'You have been timed out from chat.', until });
+      } else {
+        setNotice({ type: 'error', text: r.error });
+        setTimeout(() => setNotice(n => (n?.type === 'error' ? null : n)), 4000);
+      }
+    } else if (r?.pointsAwarded === 0 && r?.pointsReason) {
+      const reasons: Record<string, string> = {
+        cooldown: '⏱ No points (15s cooldown between earning).',
+        too_short: '✏️ No points — message must be 10+ characters.',
+        duplicate: '🔁 No points — same as your last message.',
+        daily_cap: '🏁 Daily chat cap reached (300 pts).',
+      };
+      const t = reasons[r.pointsReason];
+      if (t) {
+        setNotice({ type: 'info', text: t });
+        setTimeout(() => setNotice(n => (n?.type === 'info' ? null : n)), 3000);
+      }
+    }
   };
 
   const remove = async (id: string) => {

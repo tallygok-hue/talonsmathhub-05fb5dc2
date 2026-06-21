@@ -962,15 +962,53 @@ Deno.serve(async (req) => {
         username: s.account.username, message: msg,
         is_admin: s.account.role === 'admin', image_url: imageUrl,
       })
+
+      // ---- Anti-spam point awards (chat) ----
+      // Random 1-5 base, gated by: 15s cooldown since last AWARDED msg,
+      // min 10 chars, not a duplicate of last awarded message, and a
+      // 300 pt daily cap. Messages still send even if no points are awarded.
+      const acct = s.account as any
+      const now = Date.now()
+      const lastAwardTs = acct.last_chat_award_at ? new Date(acct.last_chat_award_at).getTime() : 0
+      const lastText = (acct.last_chat_text || '').toLowerCase().trim()
+      const cooldownOk = now - lastAwardTs >= 15_000
+      const longEnough = msg.length >= 10
+      const notDup = msg.toLowerCase().trim() !== lastText
+
+      let awarded = 0
+      let pointsReason = ''
+      if (!cooldownOk) pointsReason = 'cooldown'
+      else if (!longEnough) pointsReason = 'too_short'
+      else if (!notDup) pointsReason = 'duplicate'
+
+      if (cooldownOk && longEnough && notDup) {
+        // Daily cap: 300 pts/day from chat
+        const startOfDay = new Date(); startOfDay.setUTCHours(0, 0, 0, 0)
+        const { data: todayRows } = await supabase.from('point_transactions')
+          .select('amount').eq('account_id', accountId).eq('reason', 'chat.message')
+          .gte('created_at', startOfDay.toISOString())
+        const todaySum = (todayRows || []).reduce((a: number, r: any) => a + (r.amount || 0), 0)
+        const remaining = Math.max(0, 300 - todaySum)
+        if (remaining > 0) {
+          const base = 1 + Math.floor(Math.random() * 5) // 1..5
+          awarded = await awardPoints(accountId, Math.min(base, remaining), 'chat.message')
+        } else {
+          pointsReason = 'daily_cap'
+        }
+      }
+
       // bookkeeping
-      await supabase.from('accounts').update({
+      const updates: any = {
         last_chat_at: new Date().toISOString(),
-        chat_count: (s.account as any).chat_count !== undefined ? (s.account as any).chat_count + 1 : 1,
-      }).eq('id', accountId)
-      // points: 1 per message, capped daily by quest goal anyway; diminishing handled via cooldown
-      await awardPoints(accountId, 1, 'chat.message')
+        chat_count: acct.chat_count !== undefined ? acct.chat_count + 1 : 1,
+      }
+      if (awarded > 0) {
+        updates.last_chat_award_at = new Date().toISOString()
+        updates.last_chat_text = msg.slice(0, 500)
+      }
+      await supabase.from('accounts').update(updates).eq('id', accountId)
       await bumpQuest(accountId, 'chat', 1)
-      return json({ success: true })
+      return json({ success: true, pointsAwarded: awarded, pointsReason: awarded ? null : pointsReason })
     }
     if (action === 'deleteChat') {
       const body = await req.json()

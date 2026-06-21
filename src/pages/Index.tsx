@@ -67,17 +67,8 @@ const Index = () => {
     return () => { supabase.removeChannel(channel); };
   }, [isAuthenticated]);
 
-  // Auto-end session when leaving / closing the tab so codes free up immediately
-  useEffect(() => {
-    if (!isAuthenticated) return;
-    const handler = () => apiLogoutBeacon();
-    window.addEventListener('pagehide', handler);
-    window.addEventListener('beforeunload', handler);
-    return () => {
-      window.removeEventListener('pagehide', handler);
-      window.removeEventListener('beforeunload', handler);
-    };
-  }, [isAuthenticated]);
+  // (Auto-logout-on-unload removed: it was firing on every refresh and kicking
+  // users back to the home page. Idle sessions expire server-side instead.)
 
   const handleLogin = useCallback(async (username: string, code: string): Promise<{ success: boolean; isAdmin: boolean; message: string; mustSetUsername?: boolean; username?: string | null }> => {
     try {

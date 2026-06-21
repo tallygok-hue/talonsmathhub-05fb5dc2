@@ -9,6 +9,7 @@ import { ProfilePanel } from './ProfilePanel';
 import { PacksSystem } from './PacksSystem';
 import { GamblingGames } from './GamblingGames';
 import { PermUsernameModal } from './PermUsernameModal';
+import { MultiplierBanner } from './MultiplierBanner';
 import { useActivityTracker } from '../lib/useActivityTracker';
 
 interface GamePortalProps {
@@ -207,6 +208,7 @@ export function GamePortal({ username, isAdmin, onLogout, onAdminPanel, mustSetU
         </div>
       </header>
 
+      <MultiplierBanner />
       <PollsPanel />
 
       <div className="flex-1 relative">
