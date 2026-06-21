@@ -112,7 +112,7 @@ export function FeedbackWidget() {
           >
             <div className="px-4 py-3 border-b border-gray-800 flex items-center justify-between">
               <h3 className="font-bold text-white text-sm">💬 Comments, Complaints & Requests</h3>
-              <button onClick={() => setOpen(false)} className="text-gray-500 hover:text-white text-xl leading-none">×</button>
+              <button aria-label="Close feedback" onClick={() => setOpen(false)} className="text-gray-500 hover:text-white text-xl leading-none">×</button>
             </div>
 
             <div className="flex border-b border-gray-800">

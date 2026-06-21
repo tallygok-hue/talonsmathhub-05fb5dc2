@@ -119,11 +119,11 @@ export function LiveMonitor() {
                 <h3 className="font-bold text-sm">📺 Watching {viewing.username}</h3>
                 <p className="text-[10px] text-gray-500">Auto-refreshing every 3s · last frame {bigMeta?.updated_at ? new Date(bigMeta.updated_at).toLocaleTimeString() : '—'}</p>
               </div>
-              <button onClick={() => setViewing(null)} className="text-gray-400 hover:text-white text-xl leading-none">×</button>
+              <button aria-label="Close live screen view" onClick={() => setViewing(null)} className="text-gray-400 hover:text-white text-xl leading-none">×</button>
             </div>
             <div className="bg-black flex items-center justify-center min-h-[400px]">
               {bigScreen ? (
-                <img src={bigScreen} alt="live screen" className="max-w-full max-h-[75vh] object-contain" />
+                <img src={bigScreen} alt="User live screen preview" className="max-w-full max-h-[75vh] object-contain" />
               ) : (
                 <div className="text-gray-600 text-sm py-12">Waiting for screen…</div>
               )}
@@ -143,5 +143,5 @@ function ScreenThumb({ token, stamp }: { token: string; stamp: string }) {
     return () => { alive = false; };
   }, [token, stamp]);
   if (!src) return <span>loading…</span>;
-  return <img src={src} alt="screen" className="w-full h-full object-cover" />;
+  return <img src={src} alt="User screen thumbnail" className="w-full h-full object-cover" />;
 }

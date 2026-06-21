@@ -150,7 +150,7 @@ export function ChatPanel({ username, isAdmin, isMod: isModProp }: Props) {
           💬 Live Chat
           <span className="text-[10px] font-normal text-pink-100/80">· {messages.length} msgs</span>
         </div>
-        <button onClick={() => setOpen(false)} className="text-white/80 hover:text-white text-lg leading-none px-1">×</button>
+        <button aria-label="Close chat" onClick={() => setOpen(false)} className="text-white/80 hover:text-white text-lg leading-none px-1">×</button>
       </div>
 
       <div ref={scrollRef} className="flex-1 overflow-y-auto p-3 space-y-2 bg-gray-950 relative">
