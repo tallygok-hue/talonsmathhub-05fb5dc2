@@ -12,3 +12,5 @@ Allow: /
 
 User-agent: *
 Allow: /
+
+Sitemap: https://talonsmathhub.lovable.app/sitemap.xml

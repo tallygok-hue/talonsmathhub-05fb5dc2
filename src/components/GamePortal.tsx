@@ -129,12 +129,12 @@ export function GamePortal({ username, isAdmin, onLogout, onAdminPanel, mustSetU
             <span className="text-white font-semibold hidden sm:inline truncate">{activeGame.name}</span>
           </div>
           <div className="flex items-center gap-1.5 shrink-0">
-            <button onClick={() => toggleFav(activeGame.id)} className="p-2 hover:bg-gray-800 rounded-lg text-lg" title="Favorite">
+            <button aria-label={favorites.includes(activeGame.id) ? 'Remove from favorites' : 'Add to favorites'} onClick={() => toggleFav(activeGame.id)} className="p-2 hover:bg-gray-800 rounded-lg text-lg" title="Favorite">
               {favorites.includes(activeGame.id) ? '⭐' : '☆'}
             </button>
             <a href={activeGame.url} target="_blank" rel="noopener noreferrer"
               className="px-2 py-1.5 bg-blue-700 text-white rounded-lg hover:bg-blue-600 text-xs font-bold">↗ New Tab</a>
-            <button onClick={onLogout} className="px-3 py-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm font-bold" title="Quick Exit">🚨</button>
+            <button aria-label="Quick exit and log out" onClick={onLogout} className="px-3 py-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm font-bold" title="Quick Exit">🚨</button>
           </div>
         </div>
         {iframeError ? (
@@ -202,7 +202,7 @@ export function GamePortal({ username, isAdmin, onLogout, onAdminPanel, mustSetU
             {isAdmin && (
               <button onClick={onAdminPanel} className="px-3 py-2 bg-yellow-600/20 text-yellow-400 rounded-lg text-xs font-medium hover:bg-yellow-600/30 border border-yellow-600/30">⚙️ Admin</button>
             )}
-            <button onClick={onLogout} className="px-3 py-2 bg-red-900/30 text-red-400 rounded-lg text-xs font-medium hover:bg-red-900/50 border border-red-800/30" title="Exit">🚨 Exit</button>
+            <button aria-label="Quick exit and log out" onClick={onLogout} className="px-3 py-2 bg-red-900/30 text-red-400 rounded-lg text-xs font-medium hover:bg-red-900/50 border border-red-800/30" title="Exit">🚨 Exit</button>
           </div>
         </div>
       </header>

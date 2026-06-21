@@ -1,0 +1,9 @@
+# Talon's Math Hub
+
+> Free online math practice, lessons, and tools for students covering algebra, geometry, and calculus.
+
+Talon's Math Hub is a public educational site offering interactive math practice, quizzes, and learning resources for students.
+
+## Pages
+
+- [Home](/): Math practice, lessons, and learning tools.
