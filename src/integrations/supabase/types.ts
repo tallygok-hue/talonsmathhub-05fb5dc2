@@ -113,6 +113,8 @@ export type Database = {
           id: string
           inventory: Json
           last_chat_at: string | null
+          last_chat_award_at: string | null
+          last_chat_text: string | null
           last_login_at: string | null
           last_streak_date: string | null
           must_set_username: boolean
@@ -138,6 +140,8 @@ export type Database = {
           id: string
           inventory?: Json
           last_chat_at?: string | null
+          last_chat_award_at?: string | null
+          last_chat_text?: string | null
           last_login_at?: string | null
           last_streak_date?: string | null
           must_set_username?: boolean
@@ -163,6 +167,8 @@ export type Database = {
           id?: string
           inventory?: Json
           last_chat_at?: string | null
+          last_chat_award_at?: string | null
+          last_chat_text?: string | null
           last_login_at?: string | null
           last_streak_date?: string | null
           must_set_username?: boolean
