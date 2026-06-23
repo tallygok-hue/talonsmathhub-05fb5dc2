@@ -42,14 +42,14 @@ export function useActivityTracker({ enabled, view, game, pingMs = 5000, screens
         const canvas = await html2canvas(target, {
           backgroundColor: '#0a0a0f',
           logging: false,
-          scale: Math.min(0.4, 640 / Math.max(target.clientWidth, 1)),
+          scale: Math.min(0.3, 420 / Math.max(target.clientWidth, 1)),
           useCORS: true,
           allowTaint: false,
           ignoreElements: (el) => el.tagName === 'SCRIPT',
         } as any);
         const w = canvas.width, h = canvas.height;
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.55);
-        if (!cancelled && dataUrl.length < 600_000) {
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.4);
+        if (!cancelled && dataUrl.length < 240_000) {
           await apiUploadScreen(dataUrl, w, h);
         }
       } catch { /* ignore */ }
