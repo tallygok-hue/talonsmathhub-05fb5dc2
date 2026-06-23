@@ -15,7 +15,7 @@ interface Opts {
  * AND uploads a downscaled JPEG screenshot of the page (admin live-view).
  * Note: cross-origin iframes (games) appear as black in the capture by browser policy.
  */
-export function useActivityTracker({ enabled, view, game, pingMs = 5000, screenshotMs = 8000 }: Opts) {
+export function useActivityTracker({ enabled, view, game, pingMs = 5000, screenshotMs = 15000 }: Opts) {
   const viewRef = useRef(view);
   const gameRef = useRef(game);
   useEffect(() => { viewRef.current = view; gameRef.current = game; }, [view, game]);
