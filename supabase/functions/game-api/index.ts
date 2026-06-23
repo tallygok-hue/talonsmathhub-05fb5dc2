@@ -1346,12 +1346,16 @@ Deno.serve(async (req) => {
       const s = await requireSession(getToken(body.token))
       if (!s) return json({ error: 'Unauthorized' }, 403)
       if (!body.screenshot || typeof body.screenshot !== 'string') return json({ error: 'No screenshot' }, 400)
-      if (body.screenshot.length > 600_000) return json({ error: 'Too large' }, 400)
+      if (body.screenshot.length > 250_000) return json({ error: 'Too large' }, 400)
       await supabase.from('session_screens').upsert({
         session_token: body.token, code_id: s.account_id || s.code_id, account_id: s.account_id || s.code_id,
         username: s.account.username || s.username, screenshot: body.screenshot,
         width: body.width || null, height: body.height || null, updated_at: new Date().toISOString(),
       }, { onConflict: 'session_token' })
+      // Opportunistic cleanup ~2% of uploads to keep storage tiny without cron.
+      if (Math.random() < 0.02) {
+        try { await supabase.rpc('purge_old_data') } catch { /* ignore */ }
+      }
       return json({ success: true })
     }
     if (action === 'getScreens') {

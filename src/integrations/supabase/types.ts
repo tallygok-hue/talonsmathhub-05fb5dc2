@@ -1236,6 +1236,7 @@ export type Database = {
         Returns: boolean
       }
       hash_password: { Args: { _password: string }; Returns: string }
+      purge_old_data: { Args: never; Returns: Json }
       verify_password: {
         Args: { _account_id: string; _password: string }
         Returns: boolean
