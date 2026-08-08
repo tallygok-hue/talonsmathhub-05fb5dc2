@@ -960,11 +960,30 @@ Deno.serve(async (req) => {
         if (!flag?.enabled || !hasPerm) return json({ error: 'Image uploads not unlocked' }, 403)
       }
 
-      await supabase.from('chat_messages').insert({
+      const { data: inserted } = await supabase.from('chat_messages').insert({
         account_id: accountId, code_id: accountId,
         username: s.account.username, message: msg,
         is_admin: s.account.role === 'admin', image_url: imageUrl,
-      })
+      }).select('id').maybeSingle()
+
+      // ---- Auto safety gate: queue suspicious messages for moderator review ----
+      const raw = String(body.message || '')
+      const lower = raw.toLowerCase()
+      const autoFlags: string[] = []
+      if (PROFANITY.some((w) => new RegExp(`\\b${w}\\b`, 'i').test(raw))) autoFlags.push('profanity')
+      if (/(https?:\/\/|discord\.gg\/|\.gg\/)/i.test(raw)) autoFlags.push('link')
+      if (/(kill yourself|kys\b|nazi|hitler|suicide)/i.test(lower)) autoFlags.push('harm')
+      if (raw.length > 40 && /(.)\1{9,}/.test(raw)) autoFlags.push('spam')
+      if (imageUrl) autoFlags.push('image')
+      if (inserted?.id && autoFlags.length) {
+        await supabase.from('chat_reports').insert({
+          message_id: inserted.id,
+          reporter_account_id: accountId,
+          reason: `auto: ${autoFlags.join(', ')}`,
+          source: 'auto',
+          status: 'open',
+        })
+      }
 
       // ---- Anti-spam point awards (chat) ----
       // Random 1-5 base, gated by: 15s cooldown since last AWARDED msg,
