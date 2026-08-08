@@ -396,27 +396,42 @@ export type Database = {
       }
       chat_reports: {
         Row: {
+          ai_action: string | null
+          ai_reviewed_at: string | null
+          ai_severity: string | null
+          ai_summary: string | null
           created_at: string
           id: string
           message_id: string
           reason: string | null
           reporter_account_id: string
+          source: string
           status: string
         }
         Insert: {
+          ai_action?: string | null
+          ai_reviewed_at?: string | null
+          ai_severity?: string | null
+          ai_summary?: string | null
           created_at?: string
           id?: string
           message_id: string
           reason?: string | null
           reporter_account_id: string
+          source?: string
           status?: string
         }
         Update: {
+          ai_action?: string | null
+          ai_reviewed_at?: string | null
+          ai_severity?: string | null
+          ai_summary?: string | null
           created_at?: string
           id?: string
           message_id?: string
           reason?: string | null
           reporter_account_id?: string
+          source?: string
           status?: string
         }
         Relationships: [
@@ -1073,6 +1088,36 @@ export type Database = {
           name?: string
           rarity?: string
           value?: string
+        }
+        Relationships: []
+      }
+      system_status: {
+        Row: {
+          id: boolean
+          last_incident_at: string
+          last_incident_note: string | null
+          message: string | null
+          status: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id?: boolean
+          last_incident_at?: string
+          last_incident_note?: string | null
+          message?: string | null
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: boolean
+          last_incident_at?: string
+          last_incident_note?: string | null
+          message?: string | null
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
         }
         Relationships: []
       }
