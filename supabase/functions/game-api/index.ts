@@ -488,10 +488,13 @@ Deno.serve(async (req) => {
       if (!s) return json({ error: 'Unauthorized' }, 403)
       const accountId = s.account_id || s.code_id
       const game = String(body.game || '')
-      const wager = Math.max(1, Math.min(10000, Number(body.wager || 0) | 0))
+      const wager = Math.max(1, Math.floor(Number(body.wager || 0)))
+      if (!Number.isFinite(wager)) return json({ error: 'Invalid wager' }, 400)
       const choice = body.choice
       if (!['coinflip', 'dice', 'slots'].includes(game)) return json({ error: 'Unknown game' }, 400)
       const { data: acc } = await supabase.from('accounts').select('points').eq('id', accountId).maybeSingle()
+      // No fixed cap — you can wager anything up to your balance, and payouts
+      // scale with the wager (2x game = we match your bet).
       if ((acc?.points || 0) < wager) return json({ error: 'Not enough points' }, 400)
 
       let payout = 0
@@ -957,11 +960,30 @@ Deno.serve(async (req) => {
         if (!flag?.enabled || !hasPerm) return json({ error: 'Image uploads not unlocked' }, 403)
       }
 
-      await supabase.from('chat_messages').insert({
+      const { data: inserted } = await supabase.from('chat_messages').insert({
         account_id: accountId, code_id: accountId,
         username: s.account.username, message: msg,
         is_admin: s.account.role === 'admin', image_url: imageUrl,
-      })
+      }).select('id').maybeSingle()
+
+      // ---- Auto safety gate: queue suspicious messages for moderator review ----
+      const raw = String(body.message || '')
+      const lower = raw.toLowerCase()
+      const autoFlags: string[] = []
+      if (PROFANITY.some((w) => new RegExp(`\\b${w}\\b`, 'i').test(raw))) autoFlags.push('profanity')
+      if (/(https?:\/\/|discord\.gg\/|\.gg\/)/i.test(raw)) autoFlags.push('link')
+      if (/(kill yourself|kys\b|nazi|hitler|suicide)/i.test(lower)) autoFlags.push('harm')
+      if (raw.length > 40 && /(.)\1{9,}/.test(raw)) autoFlags.push('spam')
+      if (imageUrl) autoFlags.push('image')
+      if (inserted?.id && autoFlags.length) {
+        await supabase.from('chat_reports').insert({
+          message_id: inserted.id,
+          reporter_account_id: accountId,
+          reason: `auto: ${autoFlags.join(', ')}`,
+          source: 'auto',
+          status: 'open',
+        })
+      }
 
       // ---- Anti-spam point awards (chat) ----
       // Random 1-5 base, gated by: 15s cooldown since last AWARDED msg,
@@ -1097,6 +1119,156 @@ Deno.serve(async (req) => {
       await supabase.from('chat_reports').update({ status: 'resolved' }).eq('id', body.reportId)
       return json({ success: true })
     }
+
+    // ============================================================
+    // SYSTEM HEALTH / STATUS
+    // ============================================================
+    if (action === 'getStatus') {
+      const { data: st } = await supabase.from('system_status').select('*').eq('id', true).maybeSingle()
+      const since = new Date()
+      since.setMinutes(since.getMinutes() - 5)
+      const { count: online } = await supabase.from('active_sessions')
+        .select('id', { count: 'exact', head: true }).gte('last_active', since.toISOString())
+      const { count: openReports } = await supabase.from('chat_reports')
+        .select('id', { count: 'exact', head: true }).eq('status', 'open')
+      return json({
+        status: st?.status || 'operational',
+        message: st?.message || 'All systems operational',
+        lastIncidentAt: st?.last_incident_at || null,
+        lastIncidentNote: st?.last_incident_note || null,
+        onlineNow: online || 0,
+        openReports: openReports || 0,
+        serverTime: new Date().toISOString(),
+      })
+    }
+    if (action === 'setStatus') {
+      const body = await req.json().catch(() => ({}))
+      const s = await requireAdmin(getToken(body.token))
+      if (!s) return json({ error: 'Unauthorized' }, 403)
+      const status = ['operational', 'degraded', 'outage', 'maintenance'].includes(body.status) ? body.status : 'operational'
+      const patch: any = {
+        id: true,
+        status,
+        message: String(body.message || '').slice(0, 200) || 'All systems operational',
+        updated_by: s.account_id || s.code_id,
+        updated_at: new Date().toISOString(),
+      }
+      // Any non-operational status starts a new incident clock.
+      if (body.markIncident || status !== 'operational') {
+        patch.last_incident_at = new Date().toISOString()
+        patch.last_incident_note = String(body.message || status).slice(0, 200)
+      }
+      await supabase.from('system_status').upsert(patch, { onConflict: 'id' })
+      await supabase.from('audit_logs').insert({
+        actor_account_id: s.account_id || s.code_id, action: 'status.set', target: status, meta: patch,
+      })
+      return json({ success: true })
+    }
+    if (action === 'resetIncidentClock') {
+      const body = await req.json().catch(() => ({}))
+      const s = await requireAdmin(getToken(body.token))
+      if (!s) return json({ error: 'Unauthorized' }, 403)
+      await supabase.from('system_status').upsert({
+        id: true,
+        last_incident_at: new Date().toISOString(),
+        last_incident_note: String(body.note || 'Manual reset').slice(0, 200),
+        updated_by: s.account_id || s.code_id,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'id' })
+      await supabase.from('audit_logs').insert({
+        actor_account_id: s.account_id || s.code_id, action: 'status.reset_incident', target: null, meta: { note: body.note || null },
+      })
+      return json({ success: true })
+    }
+
+    // ============================================================
+    // AI SAFETY GATE — triage the chat moderation queue
+    // ============================================================
+    if (action === 'aiTriageReports') {
+      const body = await req.json().catch(() => ({}))
+      const s = await requireMod(getToken(body.token))
+      if (!s) return json({ error: 'Unauthorized' }, 403)
+      const key = Deno.env.get('LOVABLE_API_KEY')
+      if (!key) return json({ error: 'AI unavailable' }, 503)
+
+      const { data: reports } = await supabase.from('chat_reports')
+        .select('id, message_id, reason, source').eq('status', 'open').is('ai_reviewed_at', null)
+        .order('created_at', { ascending: false }).limit(25)
+      if (!reports?.length) return json({ success: true, reviewed: 0 })
+
+      const ids = [...new Set(reports.map((r: any) => r.message_id))]
+      const { data: msgs } = await supabase.from('chat_messages').select('id, username, message').in('id', ids)
+      const byId = new Map((msgs || []).map((m: any) => [m.id, m]))
+      const items = reports.map((r: any, i: number) => ({
+        i, reason: r.reason, text: (byId.get(r.message_id)?.message || '(deleted)').slice(0, 300),
+      }))
+
+      const res = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'google/gemini-2.5-flash',
+          messages: [
+            {
+              role: 'system',
+              content: 'You are a school-safe chat moderation triage assistant. For each reported message, return a severity of none, low, medium, high or critical, a one-sentence neutral summary, and a suggested action of one of: ignore, warn, delete, timeout, ban. Treat self-harm, threats, sexual content involving minors, doxxing and hate speech as high or critical. Reply with JSON only: {"results":[{"i":0,"severity":"low","summary":"...","action":"ignore"}]}',
+            },
+            { role: 'user', content: JSON.stringify(items) },
+          ],
+        }),
+      })
+      if (res.status === 429) return json({ error: 'AI rate limit, try again shortly' }, 429)
+      if (res.status === 402) return json({ error: 'AI credits exhausted' }, 402)
+      if (!res.ok) return json({ error: 'AI request failed' }, 502)
+      const data = await res.json()
+      const raw = data?.choices?.[0]?.message?.content || '{}'
+      let parsed: any = {}
+      try { parsed = JSON.parse(raw.replace(/```json|```/g, '').trim()) } catch { parsed = {} }
+      const results: any[] = Array.isArray(parsed?.results) ? parsed.results : []
+
+      let reviewed = 0
+      for (const r of results) {
+        const rep = reports[Number(r.i)]
+        if (!rep) continue
+        await supabase.from('chat_reports').update({
+          ai_severity: String(r.severity || 'low').slice(0, 20),
+          ai_summary: String(r.summary || '').slice(0, 400),
+          ai_action: String(r.action || 'ignore').slice(0, 20),
+          ai_reviewed_at: new Date().toISOString(),
+        }).eq('id', rep.id)
+        reviewed++
+      }
+      return json({ success: true, reviewed })
+    }
+
+    // Moderation queue action: delete message / timeout author / dismiss
+    if (action === 'modQueueAction') {
+      const body = await req.json().catch(() => ({}))
+      const s = await requireMod(getToken(body.token))
+      if (!s) return json({ error: 'Unauthorized' }, 403)
+      const kind = String(body.kind || '')
+      const { data: rep } = await supabase.from('chat_reports').select('id, message_id').eq('id', body.reportId).maybeSingle()
+      if (!rep) return json({ error: 'Report not found' }, 404)
+      const { data: msg } = await supabase.from('chat_messages').select('id, account_id').eq('id', rep.message_id).maybeSingle()
+
+      if (kind === 'delete' || kind === 'delete_timeout') {
+        await supabase.from('chat_messages').delete().eq('id', rep.message_id)
+      }
+      if (kind === 'timeout' || kind === 'delete_timeout') {
+        const minutes = Math.max(1, Math.min(10080, Number(body.minutes || 10)))
+        if (msg?.account_id) {
+          await supabase.from('accounts')
+            .update({ muted_until: new Date(Date.now() + minutes * 60000).toISOString() })
+            .eq('id', msg.account_id)
+        }
+      }
+      await supabase.from('chat_reports').update({ status: 'resolved' }).eq('id', rep.id)
+      await supabase.from('audit_logs').insert({
+        actor_account_id: s.account_id || s.code_id, action: `mod.${kind || 'dismiss'}`, target: rep.message_id, meta: { reportId: rep.id },
+      })
+      return json({ success: true })
+    }
+
 
     // ============================================================
     // KEEP-ALIVE & EXISTING ACTIONS (favorites, recent, requests, polls,

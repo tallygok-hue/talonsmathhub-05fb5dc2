@@ -244,7 +244,7 @@ export function GamblingGames({ onClose }: Props) {
           <label className="block text-xs font-semibold uppercase text-gray-400 mb-1.5">Wager</label>
           <div className="flex gap-2">
             <input type="number" min={1} max={points} value={wager}
-              onChange={e => setWager(Math.max(1, Math.min(points || 1, Number(e.target.value) | 0)))}
+              onChange={e => setWager(Math.max(1, Math.min(points || 1, Math.floor(Number(e.target.value) || 0))))}
               className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm" />
             {[10, 50, 100, 500].map(amt => (
               <button key={amt} disabled={amt > points} onClick={() => setWager(Math.min(amt, points))}
