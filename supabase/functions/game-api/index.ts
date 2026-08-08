@@ -488,10 +488,13 @@ Deno.serve(async (req) => {
       if (!s) return json({ error: 'Unauthorized' }, 403)
       const accountId = s.account_id || s.code_id
       const game = String(body.game || '')
-      const wager = Math.max(1, Math.min(10000, Number(body.wager || 0) | 0))
+      const wager = Math.max(1, Math.floor(Number(body.wager || 0)))
+      if (!Number.isFinite(wager)) return json({ error: 'Invalid wager' }, 400)
       const choice = body.choice
       if (!['coinflip', 'dice', 'slots'].includes(game)) return json({ error: 'Unknown game' }, 400)
       const { data: acc } = await supabase.from('accounts').select('points').eq('id', accountId).maybeSingle()
+      // No fixed cap — you can wager anything up to your balance, and payouts
+      // scale with the wager (2x game = we match your bet).
       if ((acc?.points || 0) < wager) return json({ error: 'Not enough points' }, 400)
 
       let payout = 0
