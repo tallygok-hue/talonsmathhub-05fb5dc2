@@ -142,6 +142,8 @@ export function AdminPanel({ onBack, onLogout }: AdminPanelProps) {
 
   const tabs: { id: TabId; label: string; icon: string; badge?: number }[] = [
     { id: 'dashboard', label: 'Dashboard', icon: '📊' },
+    { id: 'health', label: 'Health', icon: '🩺' },
+    { id: 'modqueue', label: 'Mod Queue', icon: '🛡️' },
     { id: 'economy', label: 'Economy', icon: '💰' },
     { id: 'live', label: 'Live', icon: '📺', badge: activeSessions.length || undefined },
     { id: 'sessions', label: 'Sessions', icon: '👥' },
