@@ -10,6 +10,8 @@ import { LiveMonitor } from './LiveMonitor';
 import { AnalyticsPanel } from './AnalyticsPanel';
 import { PollsAdmin } from './PollsAdmin';
 import { AdminEconomyPanel } from './AdminEconomyPanel';
+import { AdminHealthPanel } from './AdminHealthPanel';
+import { ModerationQueue } from './ModerationQueue';
 
 interface AdminPanelProps {
   onBack: () => void;
