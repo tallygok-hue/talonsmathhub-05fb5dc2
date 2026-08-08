@@ -285,3 +285,16 @@ export async function apiModAdjustPoints(accountId: string, amount: number, note
 export async function apiAdminSetRole(accountId: string, role: 'user' | 'moderator' | 'admin') {
   return call('adminSetRole', 'POST', { accountId, role });
 }
+
+// === System health / status ===
+export async function apiGetStatus() { return call('getStatus', 'GET'); }
+export async function apiSetStatus(status: 'operational' | 'degraded' | 'outage' | 'maintenance', message: string, markIncident = false) {
+  return call('setStatus', 'POST', { status, message, markIncident });
+}
+export async function apiResetIncidentClock(note?: string) { return call('resetIncidentClock', 'POST', { note }); }
+
+// === AI safety gate / moderation queue ===
+export async function apiAiTriageReports() { return call('aiTriageReports', 'POST', {}); }
+export async function apiModQueueAction(reportId: string, kind: 'dismiss' | 'delete' | 'timeout' | 'delete_timeout', minutes?: number) {
+  return call('modQueueAction', 'POST', { reportId, kind, minutes });
+}
