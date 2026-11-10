@@ -4,6 +4,7 @@ import { supabase } from '../integrations/supabase/client';
 
 import { FeedbackWidget } from './FeedbackWidget';
 import { ChatPanel } from './ChatPanel';
+import { CursorBattlefront } from './CursorBattlefront';
 import { PollsPanel } from './PollsPanel';
 import { ProfilePanel } from './ProfilePanel';
 import { PacksSystem } from './PacksSystem';
@@ -69,6 +70,7 @@ export function GamePortal({ username, isAdmin, onLogout, onAdminPanel, mustSetU
   const [profileOpen, setProfileOpen] = useState(false);
   const [packsOpen, setPacksOpen] = useState(false);
   const [casinoOpen, setCasinoOpen] = useState(false);
+  const [battleOpen, setBattleOpen] = useState(false);
 
   // Load favs + recent from cloud
   const refreshAccount = useCallback(async () => {
@@ -198,6 +200,9 @@ export function GamePortal({ username, isAdmin, onLogout, onAdminPanel, mustSetU
             <button onClick={() => setPacksOpen(true)} className="px-3 py-2 bg-blue-600/20 text-blue-300 rounded-lg text-xs font-medium hover:bg-blue-600/30 border border-blue-600/30">
               📦 Packs
             </button>
+            <button onClick={() => setBattleOpen(true)} className="px-3 py-2 bg-red-600/20 text-red-300 rounded-lg text-xs font-medium hover:bg-red-600/30 border border-red-600/30">
+              🖱️ Battlefront
+            </button>
             <button onClick={() => setCasinoOpen(true)} className="px-3 py-2 bg-yellow-600/20 text-yellow-300 rounded-lg text-xs font-medium hover:bg-yellow-600/30 border border-yellow-600/30">
               🎰 Casino
             </button>
@@ -237,6 +242,7 @@ export function GamePortal({ username, isAdmin, onLogout, onAdminPanel, mustSetU
       <FeedbackWidget />
       <ChatPanel username={username} isAdmin={isAdmin} />
       {profileOpen && <ProfilePanel onClose={() => setProfileOpen(false)} />}
+      {battleOpen && <CursorBattlefront username={username} onClose={() => setBattleOpen(false)} />}
       {packsOpen && <PacksSystem onClose={() => setPacksOpen(false)} />}
       {casinoOpen && <GamblingGames onClose={() => setCasinoOpen(false)} />}
       {mustSetUsername && <PermUsernameModal onComplete={(name) => onUsernameSet?.(name)} />}
